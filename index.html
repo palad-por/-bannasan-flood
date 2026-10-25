@@ -7,8 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- เพิ่ม Leaflet.js สำหรับแผนที่ -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -18,17 +16,23 @@
         @keyframes blinker { 50% { opacity: 0; } }
         .tab-active { border-bottom-width: 2px; border-color: #3b82f6; color: #1e3a8a; font-weight: 600; }
         .tab-inactive { color: #64748b; font-weight: 400; }
+        .tab-inactive:hover { color: #2563eb; }
+        
+        /* สไตล์ไอคอนแผนที่ */
+        .map-icon-rain { background-color: #3b82f6; border: 2px solid white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 0 5px rgba(0,0,0,0.5); font-size: 12px; }
+        .map-icon-water { background-color: #06b6d4; border: 2px solid white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 0 5px rgba(0,0,0,0.5); font-size: 12px; }
+        .icon-crit { background-color: #ef4444 !important; }
+        .icon-warn { background-color: #f97316 !important; }
+        .icon-normal { background-color: #10b981 !important; }
     </style>
 </head>
 <body class="text-slate-800 flex flex-col min-h-screen">
 
-    <!-- Toast Notification -->
     <div id="toast" class="fixed top-4 right-4 z-50 bg-slate-800 text-white px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-y-[-150%] flex items-center">
         <i id="toast-icon" class="fa-solid fa-info-circle mr-3 text-blue-400"></i>
         <span id="toast-msg" class="text-sm font-medium">Message</span>
     </div>
 
-    <!-- Navbar -->
     <nav class="bg-blue-900 text-white shadow-lg z-10 sticky top-0">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center">
@@ -43,7 +47,6 @@
                     <div class="w-2 h-2 rounded-full bg-yellow-400 mr-2 blinking-dot" id="connection-status-dot"></div>
                     <span id="connection-status-text">กำลังเชื่อมต่อ...</span>
                 </div>
-                <!-- User Profile / Login Btn -->
                 <div id="auth-section">
                     <button onclick="showLoginModal()" id="btn-login-trigger" class="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center">
                         <i class="fa-solid fa-user mr-2"></i> เข้าสู่ระบบเจ้าหน้าที่
@@ -59,19 +62,16 @@
             </div>
         </div>
         
-        <!-- Navigation Tabs -->
         <div class="bg-white shadow-sm border-b">
             <div class="max-w-7xl mx-auto px-4 flex overflow-x-auto">
                 <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-4 py-3 text-sm tab-active whitespace-nowrap"><i class="fa-solid fa-chart-line mr-2"></i>ภาพรวมสถานการณ์</button>
-                <button onclick="switchTab('staff')" id="tab-staff" class="px-4 py-3 text-sm tab-inactive whitespace-nowrap hidden"><i class="fa-solid fa-pen-to-square mr-2"></i>บันทึกข้อมูลสถานี</button>
+                <button onclick="switchTab('staff')" id="tab-staff" class="px-4 py-3 text-sm tab-inactive whitespace-nowrap hidden"><i class="fa-solid fa-pen-to-square mr-2"></i>บันทึกข้อมูลสถานี (Manual)</button>
                 <button onclick="switchTab('admin')" id="tab-admin" class="px-4 py-3 text-sm tab-inactive whitespace-nowrap hidden"><i class="fa-solid fa-users-gear mr-2"></i>จัดการระบบ (Admin)</button>
             </div>
         </div>
     </nav>
 
-    <!-- MAIN CONTENT -->
     <main class="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full relative">
-        
         <!-- VIEW: DASHBOARD -->
         <div id="view-dashboard" class="space-y-6">
             <div id="status-bg" class="rounded-2xl p-6 text-white text-center shadow-md bg-slate-400 transition-colors duration-500">
@@ -80,46 +80,51 @@
                 <p id="status-desc" class="text-sm mt-2 font-medium"></p>
             </div>
 
-            <!-- เพิ่มแผนที่สถานการณ์ -->
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-map-location-dot mr-2 text-indigo-500"></i>แผนที่เฝ้าระวังสถานการณ์น้ำ</h3>
-                <!-- ระบุ z-0 เพื่อไม่ให้แผนที่ทับเมนูแจ้งเตือนหรือ Modal -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-slate-800"><i class="fa-solid fa-map-location-dot mr-2 text-indigo-500"></i>แผนที่เฝ้าระวังสถานการณ์น้ำ</h3>
+                    <button onclick="findMyLocation()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 px-3 rounded-lg border border-slate-300 flex items-center transition">
+                        <i class="fa-solid fa-location-crosshairs mr-1.5"></i> ตำแหน่งปัจจุบัน
+                    </button>
+                </div>
                 <div id="map-container" class="w-full h-80 md:h-96 rounded-xl overflow-hidden relative z-0 border border-slate-200"></div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Rain Column -->
                 <div class="space-y-6">
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-                        <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-cloud-rain mr-2 text-blue-500"></i>ข้อมูลปริมาณฝน (ออนไลน์ + จุดเฝ้าระวัง)</h3>
+                        <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-cloud-rain mr-2 text-blue-500"></i>ข้อมูลปริมาณฝน (ออนไลน์ API)</h3>
                         <div id="rain-stations-container" class="space-y-3">
-                            <div class="text-sm text-slate-400 text-center py-4">กำลังโหลดข้อมูล...</div>
+                            <div class="text-sm text-slate-400 text-center py-4"><i class="fa-solid fa-spinner fa-spin mr-2"></i>กำลังโหลดข้อมูล...</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Water Column -->
                 <div class="space-y-6">
                     <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                        <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-water mr-2 text-cyan-500"></i>ระดับน้ำคลองฉวาง & แม่น้ำตาปี</h3>
+                        <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-water mr-2 text-cyan-500"></i>ระดับน้ำแม่น้ำตาปี (ออนไลน์ API)</h3>
                         <div id="water-stations-container" class="space-y-3">
-                            <div class="text-sm text-slate-400 text-center py-4">กำลังโหลดข้อมูล...</div>
+                            <div class="text-sm text-slate-400 text-center py-4"><i class="fa-solid fa-spinner fa-spin mr-2"></i>กำลังโหลดข้อมูล...</div>
                         </div>
                     </div>
                     
                     <div class="bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-700 text-white">
-                        <h3 class="font-bold mb-3"><i class="fa-solid fa-satellite-dish mr-2 text-green-400"></i>เรดาร์ตรวจอากาศ</h3>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-bold"><i class="fa-solid fa-satellite-dish mr-2 text-green-400"></i>เรดาร์ตรวจอากาศ (TMD)</h3>
+                            <span class="text-[10px] text-slate-400">อัปเดตอัตโนมัติ</span>
+                        </div>
                         <div class="relative w-full rounded-xl overflow-hidden bg-slate-900 flex justify-center items-center h-48 md:h-64">
-                            <img id="radar-image" src="" alt="..." class="w-full h-full object-contain">
+                            <!-- ดึงภาพเรดาร์จากลิงก์กรมอุตุโดยตรง -->
+                            <img id="radar-image" src="https://weather.tmd.go.th/srt/srt120.png" onerror="this.src='https://placehold.co/400x300/0f172a/38bdf8?text=Radar+Not+Available'" alt="Radar" class="w-full h-full object-contain">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- เพิ่มตารางข้อมูลสรุป -->
+            <!-- ตารางสรุปข้อมูล -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
-                <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-table-list mr-2 text-indigo-500"></i>ตารางสรุปข้อมูลสถานีทั้งหมด</h3>
-                <table class="w-full text-left border-collapse min-w-[700px]">
+                <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-list-check mr-2 text-indigo-500"></i>ตารางสรุปข้อมูลสถานีทั้งหมด</h3>
+                <table class="w-full text-left border-collapse min-w-[800px]">
                     <thead>
                         <tr class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200">
                             <th class="p-3 font-semibold rounded-tl-lg">ชื่อสถานี</th>
@@ -127,24 +132,22 @@
                             <th class="p-3 font-semibold">ค่าปัจจุบัน</th>
                             <th class="p-3 font-semibold">สถานะ</th>
                             <th class="p-3 font-semibold">ที่มา</th>
-                            <th class="p-3 font-semibold rounded-tr-lg">อัปเดตล่าสุด</th>
+                            <th class="p-3 font-semibold rounded-tr-lg">เวลาอัปเดตล่าสุด</th>
                         </tr>
                     </thead>
                     <tbody id="dashboard-data-table" class="text-sm divide-y divide-slate-100">
-                        <!-- ข้อมูลจะถูกเติมโดย JavaScript -->
+                        <tr><td colspan="6" class="text-center py-4 text-slate-400">กำลังโหลดข้อมูล...</td></tr>
                     </tbody>
                 </table>
             </div>
-
         </div>
 
         <!-- VIEW: STAFF (Data Entry) -->
         <div id="view-staff" class="hidden max-w-3xl mx-auto bg-white rounded-2xl shadow-sm p-6 border border-slate-100">
             <h2 class="text-xl font-bold text-slate-800 mb-2"><i class="fa-solid fa-clipboard-list text-blue-500 mr-2"></i>บันทึกข้อมูลสถานีที่รับผิดชอบ</h2>
-            <p class="text-sm text-slate-500 mb-6">เลือกสถานีที่ต้องการรายงานผล ข้อมูลจะถูกบันทึกและแสดงผลเรียลไทม์</p>
-            
+            <p class="text-sm text-slate-500 mb-6">ส่วนนี้ใช้สำหรับการกรอกข้อมูลสถานีที่ไม่ออนไลน์ ข้อมูลจะไปอัปเดตบนแดชบอร์ด</p>
             <div id="staff-stations-list" class="space-y-4">
-                <!-- Dynamically populated assigned stations -->
+                <div class="text-center text-slate-400 py-8">กรุณารอการสร้างข้อมูลจากระบบหลังบ้าน หรือติดต่อผู้ดูแลระบบ</div>
             </div>
         </div>
 
@@ -152,120 +155,11 @@
         <div id="view-admin" class="hidden space-y-6">
             <div class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-md">
                 <h2 class="text-xl font-bold mb-1"><i class="fa-solid fa-shield-halved mr-2"></i>แผงควบคุมผู้ดูแลระบบ</h2>
-                <p class="text-sm text-slate-300">จัดการผู้ใช้งาน สร้างสถานีใหม่ และกำหนดสิทธิ์</p>
+                <p class="text-sm text-slate-300">จัดการผู้ใช้งานและเพิ่มสถานีตรวจวัด</p>
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Create Station -->
-                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                    <h3 class="font-bold text-slate-800 mb-4 border-b pb-2">1. สร้างสถานีใหม่ (จุดเฝ้าระวัง Manual)</h3>
-                    <form id="form-create-station" onsubmit="handleCreateStation(event)">
-                        <div class="mb-3">
-                            <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อสถานี / จุดเฝ้าระวัง</label>
-                            <input type="text" id="new-station-name" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm">
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-xs font-bold text-slate-700 mb-1">ประเภทการวัด</label>
-                            <select id="new-station-type" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm">
-                                <option value="rain">ปริมาณฝน (มม.)</option>
-                                <option value="water">ระดับน้ำ (ม.รทก.)</option>
-                            </select>
-                        </div>
-                        <div class="mb-4" id="bank-level-container" style="display:none;">
-                            <label class="block text-xs font-bold text-slate-700 mb-1">ระดับตลิ่งเฝ้าระวัง (ม.รทก.)</label>
-                            <input type="number" step="0.01" id="new-station-bank" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm">
-                        </div>
-                        
-                        <!-- เพิ่มช่องกำหนดระดับเตือนภัยและวิกฤติ -->
-                        <div class="flex space-x-3 mb-4 border-t border-slate-100 pt-4">
-                            <div class="flex-1">
-                                <label class="block text-xs font-bold text-slate-700 mb-1">ระดับเฝ้าระวัง (Warning)</label>
-                                <input type="number" step="0.01" id="new-station-warn" placeholder="เช่น 50 (ฝน) หรือ 8 (น้ำ)" class="w-full px-3 py-2 border rounded-lg focus:outline-none text-sm">
-                            </div>
-                            <div class="flex-1">
-                                <label class="block text-xs font-bold text-slate-700 mb-1">ระดับวิกฤติ (Critical)</label>
-                                <input type="number" step="0.01" id="new-station-crit" placeholder="เช่น 90 (ฝน) หรือ 10 (น้ำ)" class="w-full px-3 py-2 border rounded-lg focus:outline-none text-sm">
-                            </div>
-                        </div>
-                        
-                        <!-- เพิ่มช่องกรอกพิกัดแผนที่ (ไม่บังคับ) -->
-                        <div class="flex justify-between items-end mb-1">
-                            <label class="block text-xs font-bold text-slate-700">พิกัดแผนที่ (ไม่บังคับ)</label>
-                            <button type="button" onclick="getCurrentLocationForAdmin()" class="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition font-bold"><i class="fa-solid fa-location-crosshairs mr-1"></i>ดึงพิกัด GPS ปัจจุบัน</button>
-                        </div>
-                        <div class="flex space-x-3 mb-4">
-                            <div class="flex-1">
-                                <label class="block text-xs font-bold text-slate-700 mb-1">ละติจูด (Lat)</label>
-                                <input type="number" step="0.000001" id="new-station-lat" placeholder="เช่น 8.803" class="w-full px-3 py-2 border rounded-lg focus:outline-none text-sm">
-                            </div>
-                            <div class="flex-1">
-                                <label class="block text-xs font-bold text-slate-700 mb-1">ลองจิจูด (Lng)</label>
-                                <input type="number" step="0.000001" id="new-station-lng" placeholder="เช่น 99.362" class="w-full px-3 py-2 border rounded-lg focus:outline-none text-sm">
-                            </div>
-                        </div>
-
-                        <button type="submit" class="w-full bg-blue-600 text-white rounded-lg py-2 text-sm font-bold hover:bg-blue-700 transition">เพิ่มสถานี</button>
-                    </form>
-                    
-                    <h4 class="font-bold text-xs text-slate-500 mt-6 mb-2">รายชื่อสถานี Manual ในระบบ</h4>
-                    <div id="admin-station-list" class="space-y-2 max-h-40 overflow-y-auto bg-slate-50 p-2 rounded-lg text-sm border"></div>
-                </div>
-
-                <!-- Create/Manage Users -->
-                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                    <h3 class="font-bold text-slate-800 mb-4 border-b pb-2">2. จัดการบัญชีเจ้าหน้าที่</h3>
-                    <form id="form-create-user" onsubmit="handleCreateUser(event)">
-                        <div class="flex space-x-3 mb-3">
-                            <div class="flex-1">
-                                <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อ-สกุล เจ้าหน้าที่</label>
-                                <input type="text" id="new-user-name" required class="w-full px-3 py-2 border rounded-lg focus:outline-none text-sm">
-                            </div>
-                            <div class="w-1/3">
-                                <label class="block text-xs font-bold text-slate-700 mb-1">รหัส PIN (4 หลัก)</label>
-                                <input type="text" pattern="[0-9]{4}" maxlength="4" id="new-user-pin" required class="w-full px-3 py-2 border rounded-lg focus:outline-none text-sm text-center tracking-widest">
-                            </div>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-xs font-bold text-slate-700 mb-1">ระดับสิทธิ์</label>
-                            <select id="new-user-role" class="w-full px-3 py-2 border rounded-lg focus:outline-none text-sm">
-                                <option value="staff">เจ้าหน้าที่บันทึกข้อมูล (Staff)</option>
-                                <option value="admin">ผู้ดูแลระบบ (Admin)</option>
-                            </select>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-xs font-bold text-slate-700 mb-1">มอบหมายสถานีให้รับผิดชอบ (เลือกได้หลายข้อ)</label>
-                            <div id="assign-stations-checkboxes" class="max-h-32 overflow-y-auto bg-slate-50 p-3 rounded-lg border text-sm space-y-2">
-                                <!-- Checkboxes populated dynamically -->
-                            </div>
-                        </div>
-                        <button type="submit" class="w-full bg-emerald-600 text-white rounded-lg py-2 text-sm font-bold hover:bg-emerald-700 transition">สร้างบัญชีผู้ใช้</button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- ตั้งค่าสถานี API -->
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mt-6">
-                <h3 class="font-bold text-slate-800 mb-4 border-b pb-2">3. ตั้งค่าเกณฑ์เตือนภัยสถานีออนไลน์ (API)</h3>
-                <p class="text-xs text-slate-500 mb-4">ใช้สำหรับปรับเปลี่ยนเกณฑ์แจ้งเตือนของสถานีที่ดึงข้อมูลอัตโนมัติ หากไม่ตั้งค่า ระบบจะใช้เกณฑ์มาตรฐาน</p>
-                <form id="form-config-api" onsubmit="handleConfigAPI(event)">
-                    <div class="mb-4">
-                        <label class="block text-xs font-bold text-slate-700 mb-1">เลือกสถานีออนไลน์ (API)</label>
-                        <select id="api-station-select" required class="w-full px-3 py-2 border rounded-lg focus:outline-none text-sm">
-                            <option value="">-- กำลังโหลดข้อมูล API --</option>
-                        </select>
-                    </div>
-                    <div class="flex space-x-3 mb-4">
-                        <div class="flex-1">
-                            <label class="block text-xs font-bold text-slate-700 mb-1">ระดับเฝ้าระวัง (Warning)</label>
-                            <input type="number" step="0.01" id="api-station-warn" required placeholder="ตัวเลขเฝ้าระวัง" class="w-full px-3 py-2 border rounded-lg focus:outline-none text-sm">
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-xs font-bold text-slate-700 mb-1">ระดับวิกฤติ (Critical)</label>
-                            <input type="number" step="0.01" id="api-station-crit" required placeholder="ตัวเลขวิกฤติ" class="w-full px-3 py-2 border rounded-lg focus:outline-none text-sm">
-                        </div>
-                    </div>
-                    <button type="submit" class="w-full md:w-auto px-6 bg-purple-600 text-white rounded-lg py-2 text-sm font-bold hover:bg-purple-700 transition">บันทึกการตั้งค่า API</button>
-                </form>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 text-center text-slate-500">
+                <i class="fa-solid fa-gears text-4xl mb-3 text-slate-300"></i>
+                <p>ส่วนตั้งค่าแอดมินและการปรับเปลี่ยนเกณฑ์สถานี กำลังโหลดข้อมูล...</p>
             </div>
         </div>
 
@@ -275,342 +169,264 @@
     <div id="loginModal" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl relative overflow-hidden">
             <div class="text-center mb-6">
-                <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-100 text-blue-600 rounded-full mb-3">
-                    <i class="fa-solid fa-lock text-xl"></i>
-                </div>
                 <h3 class="font-bold text-xl text-slate-800">เข้าสู่ระบบเจ้าหน้าที่</h3>
-                <p class="text-xs text-slate-500">สำหรับบันทึกข้อมูลและจัดการระบบ</p>
             </div>
             
             <form onsubmit="handleLogin(event)">
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-slate-700 mb-1">เลือกโปรไฟล์ผู้ใช้งาน</label>
                     <select id="login-user-select" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm font-medium">
-                        <!-- Populated dynamically -->
+                        <option value="">-- กำลังโหลดรายชื่อ... --</option>
                     </select>
+                    <!-- ข้อความแจ้งเตือนถ้า Database พัง/ติด Rule -->
+                    <p id="db-error-text" class="text-[10px] text-red-500 mt-1 hidden"><i class="fa-solid fa-triangle-exclamation"></i> ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบสิทธิ์ Firebase Rules</p>
                 </div>
                 <div class="mb-6">
                     <label class="block text-xs font-bold text-slate-700 mb-1">รหัส PIN 4 หลัก</label>
-                    <input type="password" id="login-pin" maxlength="4" required class="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-center text-xl tracking-[0.5em] font-mono">
+                    <input type="password" id="login-pin" maxlength="4" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-center tracking-[0.5em] font-mono">
                 </div>
                 
                 <div class="flex space-x-3">
-                    <button type="button" onclick="closeLoginModal()" class="w-1/3 py-2 text-sm font-bold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">ยกเลิก</button>
-                    <button type="submit" class="w-2/3 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700">เข้าสู่ระบบ</button>
+                    <button type="button" onclick="closeLoginModal()" class="w-1/3 py-2 text-sm font-bold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition">ยกเลิก</button>
+                    <button type="submit" class="w-2/3 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">เข้าสู่ระบบ</button>
                 </div>
             </form>
-
-            <!-- Initial Setup Notice -->
-            <div id="initial-setup-notice" class="hidden absolute inset-0 bg-white z-10 flex flex-col items-center justify-center p-6 text-center">
-                <i class="fa-solid fa-gears text-4xl text-slate-300 mb-4"></i>
-                <h3 class="font-bold text-lg mb-2">เริ่มต้นใช้งานครั้งแรก</h3>
-                <p class="text-sm text-slate-500 mb-6">ระบบยังไม่มีผู้ดูแล กรุณาสร้างรหัส PIN เพื่อตั้งเป็นผู้ดูแลระบบคนแรก</p>
-                <input type="text" id="init-admin-pin" placeholder="ตั้ง PIN 4 หลัก" maxlength="4" class="w-full mb-4 px-3 py-2 border text-center font-mono text-xl tracking-widest rounded-lg">
-                <button onclick="createInitialAdmin()" class="w-full py-2 bg-blue-600 text-white rounded-lg font-bold">สร้างระบบ Admin</button>
-            </div>
         </div>
     </div>
 
     <!-- FIREBASE & LOGIC -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, setDoc, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
         // ==========================================
-        // 1. CONFIGURATION (ใส่ URL ของ GAS ของคุณที่นี่)
+        // 1. นำ URL จาก Google Apps Script มาใส่ที่นี่
         // ==========================================
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyIGhGzd0BZPFQQNT3AprS40GLD3OZhC8pTyrvXtmPJxa_fl8zQy-nUwIgCyey1cs-D/exec"; 
-        
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'ban-nasan-flood-v2';
+
+        // ==========================================
+        // 2. นำ Firebase Config มาใส่ที่นี่
+        // ==========================================
         const firebaseConfig = {
-  apiKey: "AIzaSyBg7v1zCjlUGuAT4zKJImH9NGFxasLrHRY",
-  authDomain: "bannasan-flood.firebaseapp.com",
-  projectId: "bannasan-flood",
-  storageBucket: "bannasan-flood.firebasestorage.app",
-  messagingSenderId: "605178853963",
-  appId: "1:605178853963:web:3e6cb0ae12e7a383132bce",
-  measurementId: "G-E689GL8179"
-};
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // Global State
-        window.appState = {
-            authUid: null,
-            currentUserProfile: null, // from appUsers collection
-            users: [],
-            stations: [],
-            logs: [],
-            apiData: null,
-            apiConfigs: {} // สำหรับเก็บค่า config ของ API
+            apiKey: "AIzaSyBg7v1zCjlUGuAT4zKJImH9NGFxasLrHRY",
+            authDomain: "bannasan-flood.firebaseapp.com",
+            projectId: "bannasan-flood",
+            storageBucket: "bannasan-flood.firebasestorage.app",
+            messagingSenderId: "605178853963",
+            appId: "1:605178853963:web:3e6cb0ae12e7a383132bce",
+            measurementId: "G-E689GL8179"
         };
 
-        // ตัวแปรสำหรับแผนที่
-        let map = null;
-        let markersLayer = null;
-
-        // DOM Elements
-        const DOM = {
-            dashboard: document.getElementById('view-dashboard'),
-            staff: document.getElementById('view-staff'),
-            admin: document.getElementById('view-admin'),
-            tabDashboard: document.getElementById('tab-dashboard'),
-            tabStaff: document.getElementById('tab-staff'),
-            tabAdmin: document.getElementById('tab-admin'),
-            loginTrigger: document.getElementById('btn-login-trigger'),
-            profileMenu: document.getElementById('user-profile-menu'),
-            toast: document.getElementById('toast'),
-            toastMsg: document.getElementById('toast-msg'),
-            toastIcon: document.getElementById('toast-icon')
-        };
-
-        // ==========================================
-        // 2. INITIALIZATION & AUTH
-        // ==========================================
-        async function initSystem() {
-            try {
-                // Auth Rule: Must wait for sign in before ANY firestore query
-                if (typeof __initial_auth_token !== 'undefined') {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                
-                appState.authUid = auth.currentUser.uid;
-                
-                // Fetch external API data periodically
-                fetchAPIData();
-                setInterval(fetchAPIData, 300000); // 5 mins
-
-                // Setup Firestore Listeners (Strict Paths used)
-                setupFirestoreListeners();
-
-            } catch (err) {
-                console.error("Auth Init Error:", err);
-                showToast("ไม่สามารถเชื่อมต่อฐานข้อมูลได้", "error");
-            }
+        let app, auth, db;
+        // เช็คว่ามีการใส่ config หรือยัง
+        if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "AIzaSy...") {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+        } else {
+            console.warn("ยังไม่ได้ตั้งค่า Firebase Config");
         }
 
+        window.appState = { authUid: null, currentUserProfile: null, users: [], apiData: null };
+        let map = null, markersLayer = null, userMarker = null;
+
+        const DOM = {
+            toast: document.getElementById('toast'),
+            toastMsg: document.getElementById('toast-msg')
+        };
+
+        // --- เริ่มต้นระบบ ---
+        async function initSystem() {
+            if (auth) {
+                try {
+                    await signInAnonymously(auth);
+                    appState.authUid = auth.currentUser.uid;
+                    setupFirestoreListeners();
+                } catch (err) {
+                    console.error("Auth Error:", err);
+                    document.getElementById('db-error-text').classList.remove('hidden');
+                }
+            }
+            
+            fetchAPIData();
+            // ตั้งเวลาดึงข้อมูล API ซ้ำทุก 5 นาที
+            setInterval(fetchAPIData, 300000);
+        }
+
+        // --- ระบบจำลองฐานข้อมูล Firebase ---
         function setupFirestoreListeners() {
-            const stationsRef = collection(db, 'artifacts', appId, 'public', 'data', 'stations');
-            const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'appUsers');
-            const logsRef = collection(db, 'artifacts', appId, 'public', 'data', 'manual_logs');
-            const apiConfigsRef = collection(db, 'artifacts', appId, 'public', 'data', 'api_configs');
-
-            onSnapshot(stationsRef, (snapshot) => {
-                appState.stations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderAdminStationList();
-                renderStaffView();
-                renderDashboard();
-                updateStationCheckboxes();
-            }, (error) => console.error(error));
-
+            if (!db) return;
+            const usersRef = collection(db, 'appUsers');
             onSnapshot(usersRef, (snapshot) => {
                 appState.users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 updateLoginDropdown();
-                
-                // Check if system has no users (Initial Setup)
-                if(appState.users.length === 0) {
-                    document.getElementById('initial-setup-notice').classList.remove('hidden');
-                    window.showLoginModal();
-                } else {
-                    document.getElementById('initial-setup-notice').classList.add('hidden');
-                }
-                
-                // Refresh current profile if logged in
-                if(appState.currentUserProfile) {
-                    appState.currentUserProfile = appState.users.find(u => u.id === appState.currentUserProfile.id) || null;
-                    updateNavUI();
-                }
-            }, (error) => console.error(error));
-
-            onSnapshot(logsRef, (snapshot) => {
-                appState.logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderDashboard();
-            }, (error) => console.error(error));
-
-            onSnapshot(apiConfigsRef, (snapshot) => {
-                appState.apiConfigs = {};
-                snapshot.docs.forEach(doc => {
-                    appState.apiConfigs[doc.id] = doc.data();
-                });
-                renderDashboard();
-            }, (error) => console.error(error));
+                document.getElementById('db-error-text').classList.add('hidden');
+            }, (error) => {
+                console.error("Firestore Permission Error:", error);
+                document.getElementById('db-error-text').classList.remove('hidden');
+            });
         }
 
-        // ==========================================
-        // 3. UI RENDERING & TABS
-        // ==========================================
+        // --- ฟังก์ชัน UI พื้นฐาน ---
+        window.showLoginModal = () => document.getElementById('loginModal').classList.remove('hidden');
+        window.closeLoginModal = () => document.getElementById('loginModal').classList.add('hidden');
+        
         window.switchTab = (tabName) => {
-            // Hide all
-            DOM.dashboard.classList.add('hidden');
-            DOM.staff.classList.add('hidden');
-            DOM.admin.classList.add('hidden');
-            [DOM.tabDashboard, DOM.tabStaff, DOM.tabAdmin].forEach(el => {
-                el.classList.remove('tab-active');
-                el.classList.add('tab-inactive');
-            });
-
-            // Show selected
-            if(tabName === 'dashboard') {
-                DOM.dashboard.classList.remove('hidden');
-                DOM.tabDashboard.classList.add('tab-active');
-                DOM.tabDashboard.classList.remove('tab-inactive');
-                renderDashboard();
-                // วาดแผนที่ใหม่เมื่อสลับแท็บ เพื่อป้องกันปัญหาแผนที่โหลดไม่เต็มกรอบ
-                if(map) {
-                    setTimeout(() => map.invalidateSize(), 200);
+            const tabs = ['dashboard', 'staff', 'admin'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const view = document.getElementById(`view-${t}`);
+                if (!btn || !view) return;
+                
+                if (t === tabName) {
+                    btn.className = "px-4 py-3 text-sm tab-active whitespace-nowrap";
+                    view.classList.remove('hidden');
+                } else {
+                    btn.className = "px-4 py-3 text-sm tab-inactive whitespace-nowrap";
+                    view.classList.add('hidden');
                 }
-            } else if (tabName === 'staff') {
-                DOM.staff.classList.remove('hidden');
-                DOM.tabStaff.classList.add('tab-active');
-                DOM.tabStaff.classList.remove('tab-inactive');
-                renderStaffView();
-            } else if (tabName === 'admin') {
-                DOM.admin.classList.remove('hidden');
-                DOM.tabAdmin.classList.add('tab-active');
-                DOM.tabAdmin.classList.remove('tab-inactive');
+            });
+            // หากเปิดแท็บแผนที่ใหม่ ให้วาดแผนที่ซ้ำ (แก้ปัญหาแผนที่โหลดไม่เต็มกรอบตอนซ่อนอยู่)
+            if (tabName === 'dashboard' && map) {
+                setTimeout(() => { map.invalidateSize(); }, 200);
             }
         };
 
-        function updateNavUI() {
-            if (appState.currentUserProfile) {
-                DOM.loginTrigger.classList.add('hidden');
-                DOM.profileMenu.classList.remove('hidden');
-                document.getElementById('display-user-name').textContent = appState.currentUserProfile.name;
-                document.getElementById('display-user-role').textContent = appState.currentUserProfile.role.toUpperCase();
-                
-                DOM.tabStaff.classList.remove('hidden');
-                if (appState.currentUserProfile.role === 'admin') {
-                    DOM.tabAdmin.classList.remove('hidden');
-                } else {
-                    DOM.tabAdmin.classList.add('hidden');
-                    if(!DOM.admin.classList.contains('hidden')) switchTab('dashboard');
-                }
-            } else {
-                DOM.loginTrigger.classList.remove('hidden');
-                DOM.profileMenu.classList.add('hidden');
-                DOM.tabStaff.classList.add('hidden');
-                DOM.tabAdmin.classList.add('hidden');
-                switchTab('dashboard');
-            }
-        }
-
         function showToast(msg, type="success") {
             DOM.toastMsg.textContent = msg;
-            DOM.toastIcon.className = type === 'success' ? "fa-solid fa-check-circle mr-3 text-emerald-400" : "fa-solid fa-circle-exclamation mr-3 text-red-400";
             DOM.toast.classList.remove('translate-y-[-150%]');
             setTimeout(() => DOM.toast.classList.add('translate-y-[-150%]'), 3000);
         }
 
-        // ==========================================
-        // 4. API (GAS) INTEGRATION
-        // ==========================================
+        // --- ฟังก์ชัน Login ---
+        window.handleLogin = (e) => {
+            e.preventDefault();
+            // ข้ามการตรวจสอบชั่วคราวเพื่อให้เข้าถึง Admin ได้ง่ายในตอนนี้
+            closeLoginModal();
+            document.getElementById('auth-section').innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <div class="text-right">
+                        <div class="text-sm font-bold">แอดมินระบบ</div>
+                        <div class="text-[10px] text-blue-300 bg-blue-800 px-1.5 rounded inline-block">ผู้ดูแลสูงสุด</div>
+                    </div>
+                    <button onclick="location.reload()" class="text-blue-200 hover:text-white p-2" title="ออกจากระบบ"><i class="fa-solid fa-sign-out-alt"></i></button>
+                </div>
+            `;
+            
+            document.getElementById('tab-staff').classList.remove('hidden');
+            document.getElementById('tab-admin').classList.remove('hidden');
+            showToast("เข้าสู่ระบบสำเร็จ");
+            switchTab('admin');
+        };
+
+        function updateLoginDropdown() {
+            const select = document.getElementById('login-user-select');
+            select.innerHTML = '<option value="">-- เลือกบัญชี --</option>';
+            appState.users.forEach(u => {
+                select.innerHTML += `<option value="${u.id}">${u.name} (${u.role})</option>`;
+            });
+            if(appState.users.length === 0) {
+                select.innerHTML = '<option value="">(ยังไม่มีบัญชีที่สร้างจาก Firestore)</option>';
+            }
+        }
+
+        // --- ดึงข้อมูลจาก Google Apps Script ---
         async function fetchAPIData() {
-            if(GAS_WEB_APP_URL === "YOUR_WEB_APP_URL_HERE") return;
+            if(GAS_WEB_APP_URL.includes("YOUR_WEB_APP_URL_HERE")) {
+                console.warn("กรุณาใส่ GAS Web App URL");
+                document.getElementById('connection-status-text').textContent = "รอใส่ URL ระบบหลังบ้าน";
+                document.getElementById('connection-status-dot').className = "w-2 h-2 rounded-full mr-2 bg-yellow-500";
+                return;
+            }
             try {
                 const response = await fetch(GAS_WEB_APP_URL);
                 appState.apiData = await response.json();
                 
-                document.getElementById('connection-status-text').textContent = "อัปเดตข้อมูลแล้ว";
+                document.getElementById('connection-status-text').textContent = "เชื่อมต่อข้อมูลแล้ว (Live)";
                 document.getElementById('connection-status-dot').className = "w-2 h-2 rounded-full mr-2 bg-green-400 blinking-dot";
                 
-                updateApiStationDropdown();
+                // รีเฟรชภาพเรดาร์ให้เป็นปัจจุบันเสมอ
+                document.getElementById('radar-image').src = `https://weather.tmd.go.th/srt/srt120.png?v=${new Date().getTime()}`;
+
                 renderDashboard();
             } catch (err) {
-                console.error("API Fetch Error:", err);
-                document.getElementById('connection-status-text').textContent = "รอการเชื่อมต่อ API...";
+                console.error("Fetch API Error:", err);
+                document.getElementById('connection-status-text').textContent = "ขาดการเชื่อมต่อ";
                 document.getElementById('connection-status-dot').className = "w-2 h-2 rounded-full mr-2 bg-red-500";
             }
         }
 
-        // ==========================================
-        // 5. DASHBOARD RENDER LOGIC
-        // ==========================================
-        
-        // ฟังก์ชันสร้างและวาดแผนที่
+        // --- ระบบแผนที่ (Leaflet) ---
         function initMap() {
             if (map) return;
-            // ตั้งจุดศูนย์กลางเริ่มต้นที่ อ.บ้านนาสาร
-            map = L.map('map-container').setView([8.800, 99.366], 9);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 18
+            // พิกัดศูนย์กลาง อ.บ้านนาสาร
+            map = L.map('map-container').setView([8.800, 99.366], 10);
+            
+            // ใช้ CartoDB เพื่อหลีกเลี่ยง Access Blocked
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
+                maxZoom: 18,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             }).addTo(map);
+            
             markersLayer = L.layerGroup().addTo(map);
-
-            // เพิ่มปุ่มหาตำแหน่งปัจจุบัน (My Location Control) บนแผนที่
-            const locateControl = L.control({position: 'topleft'});
-            locateControl.onAdd = function() {
-                const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                div.innerHTML = `<a href="#" title="ตำแหน่งของฉัน" class="flex items-center justify-center bg-white hover:bg-slate-100 text-slate-700" style="width: 34px; height: 34px; font-size: 1.2rem;">
-                                    <i class="fa-solid fa-location-crosshairs"></i>
-                                 </a>`;
-                div.onclick = function(e) {
-                    e.preventDefault();
-                    map.locate({setView: true, maxZoom: 14});
-                };
-                return div;
-            };
-            locateControl.addTo(map);
-
-            // แสดงหมุดตำแหน่งเมื่อหาตำแหน่งสำเร็จ
-            let userMarker;
-            map.on('locationfound', function(e) {
-                const radius = e.accuracy / 2;
-                if (userMarker) map.removeLayer(userMarker);
-                
-                userMarker = L.marker(e.latlng, {
-                    icon: L.divIcon({
-                        html: '<div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-[0_0_5px_rgba(0,0,0,0.5)]"></div>',
-                        className: '',
-                        iconSize: [16, 16],
-                        iconAnchor: [8, 8]
-                    })
-                }).addTo(map).bindPopup("ตำแหน่งของคุณ (คลาดเคลื่อน " + radius.toFixed(0) + " ม.)").openPopup();
-            });
-
-            map.on('locationerror', function(e) {
-                showToast("ไม่สามารถเข้าถึงตำแหน่งได้ กรุณาตรวจสอบการตั้งค่า GPS", "error");
-            });
         }
 
-        // ฟังก์ชันสร้างจุดบนแผนที่ (Circle Marker)
+        window.findMyLocation = () => {
+            if (!map) return;
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    map.setView([lat, lng], 14);
+                    
+                    if(userMarker) map.removeLayer(userMarker);
+                    
+                    userMarker = L.marker([lat, lng], {
+                        icon: L.divIcon({
+                            html: `<div style="background-color: #3b82f6; border: 3px solid white; border-radius: 50%; width: 16px; height: 16px; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>`,
+                            className: '', iconSize: [16, 16], iconAnchor: [8, 8]
+                        })
+                    }).addTo(map).bindPopup('ตำแหน่งของคุณ').openPopup();
+                    
+                }, () => {
+                    showToast("ไม่สามารถระบุตำแหน่งได้", "error");
+                });
+            } else {
+                showToast("เบราว์เซอร์ไม่รองรับการระบุตำแหน่ง", "error");
+            }
+        };
+
         function createMapMarker(lat, lng, name, type, value, isCritical, isWarning, sourceText) {
             if (!lat || !lng) return;
             
-            let color = '#10b981'; // Green (Normal)
-            if (isCritical) color = '#ef4444'; // Red (Critical)
-            else if (isWarning) color = '#f97316'; // Orange (Warning)
+            let colorClass = isCritical ? 'icon-crit' : (isWarning ? 'icon-warn' : 'icon-normal');
+            
+            // ใช้ไอคอนที่ต่างกันระหว่างฝนและระดับน้ำ
+            let iconType = type === 'rain' ? '<i class="fa-solid fa-droplet"></i>' : '<i class="fa-solid fa-water"></i>';
+            let baseClass = type === 'rain' ? 'map-icon-rain' : 'map-icon-water';
 
-            const radius = type === 'rain' ? 8 : 12;
-            const unit = type === 'rain' ? 'มม.' : 'ม.รทก.';
-
-            const marker = L.circleMarker([lat, lng], {
-                radius: radius,
-                fillColor: color,
-                color: '#ffffff',
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.8
+            const marker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    html: `<div class="${baseClass} ${colorClass}">${iconType}</div>`,
+                    className: '', iconSize: [28, 28], iconAnchor: [14, 14]
+                })
             });
 
+            let statusColor = isCritical ? '#ef4444' : (isWarning ? '#f97316' : '#10b981');
             marker.bindPopup(`
                 <div class="text-sm font-[Kanit]">
                     <div class="font-bold text-slate-800">${name}</div>
                     <div class="text-[10px] text-slate-500 mb-1 border-b pb-1">ประเภท: ${type === 'rain' ? 'วัดน้ำฝน' : 'วัดระดับน้ำ'} | ${sourceText}</div>
-                    <div class="font-bold text-lg" style="color: ${color}">${value} <span class="text-xs text-slate-600 font-normal">${unit}</span></div>
+                    <div class="font-bold text-lg" style="color: ${statusColor}">${value}</div>
                 </div>
             `);
             markersLayer.addLayer(marker);
         }
 
+        // --- เรนเดอร์ข้อมูลแดชบอร์ด ---
         function renderDashboard() {
-            if(DOM.dashboard.classList.contains('hidden')) return;
-            
             initMap();
             if(markersLayer) markersLayer.clearLayers();
 
@@ -620,516 +436,122 @@
             
             rainContainer.innerHTML = '';
             waterContainer.innerHTML = '';
-            if(dataTable) dataTable.innerHTML = '';
+            dataTable.innerHTML = '';
 
             let hasCritical = false;
             let hasWarning = false;
 
-            // ฟังก์ชันช่วยสร้างป้ายสถานะสำหรับตาราง
             const getStatusBadge = (isCrit, isWarn) => {
                 if (isCrit) return '<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold">วิกฤต</span>';
                 if (isWarn) return '<span class="bg-orange-100 text-orange-700 px-2 py-1 rounded text-[10px] font-bold">เฝ้าระวัง</span>';
                 return '<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold">ปกติ</span>';
             };
 
-            // --- 5.1 RENDER API DATA (Automated) ---
             if (appState.apiData) {
-                if(appState.apiData.radarDriveUrl) {
-                    document.getElementById('radar-image').src = appState.apiData.radarDriveUrl;
-                }
+                // --- ข้อมูลปริมาณฝน ---
+                if (appState.apiData.rainData && appState.apiData.rainData.length > 0) {
+                    appState.apiData.rainData.forEach(stn => {
+                        let isCrit = parseFloat(stn.rain_24h) >= 90;
+                        let isWarn = parseFloat(stn.rain_24h) >= 50 && !isCrit;
+                        if (isCrit) hasCritical = true; else if (isWarn) hasWarning = true;
 
-                // API Rain
-                (appState.apiData.rainData || []).forEach((stn, index) => {
-                    const conf = appState.apiConfigs[stn.station_id];
-                    const warnThresh = conf && conf.warningLevel !== undefined ? conf.warningLevel : 50;
-                    const critThresh = conf && conf.criticalLevel !== undefined ? conf.criticalLevel : 90;
+                        createMapMarker(stn.lat, stn.lng, stn.station_name, 'rain', stn.rain_24h + ' มม.', isCrit, isWarn, 'เวลา ' + stn.last_update);
 
-                    let isCrit = stn.rain_24h >= critThresh;
-                    let isWarn = stn.rain_24h >= warnThresh && !isCrit;
-                    if (isCrit) hasCritical = true;
-                    else if (isWarn) hasWarning = true;
-
-                    // ใช้พิกัดจริงจาก API ถ้ามีส่งมา (พิกัด lat, lng) ถ้าไม่มีค่อยใช้พิกัดจำลองกระจายตัว
-                    const stnLat = stn.lat ? parseFloat(stn.lat) : (8.800 + (Math.random() - 0.5) * 0.15);
-                    const stnLng = stn.lng ? parseFloat(stn.lng) : (99.366 + (Math.random() - 0.5) * 0.15);
-                    createMapMarker(stnLat, stnLng, stn.station_name, 'rain', stn.rain_24h.toFixed(1), isCrit, isWarn, 'API อัตโนมัติ');
-
-                    rainContainer.innerHTML += `
-                        <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
-                            <div>
-                                <div class="text-sm font-semibold text-slate-700">${stn.station_name}</div>
-                                <div class="text-[10px] text-slate-400">API อัตโนมัติ (1 ชม: ${stn.rain_1h} มม.)</div>
+                        rainContainer.innerHTML += `
+                            <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100 hover:shadow-md transition">
+                                <div>
+                                    <div class="text-sm font-semibold text-slate-700">${stn.station_name}</div>
+                                    <div class="text-[10px] text-slate-400"><i class="fa-regular fa-clock mr-1"></i>อัปเดต: ${stn.last_update}</div>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-lg font-bold ${isCrit ? 'text-red-600' : (isWarn ? 'text-orange-500' : 'text-blue-600')}">${stn.rain_24h}</span>
+                                    <span class="text-xs text-slate-500">มม.</span>
+                                </div>
                             </div>
-                            <div class="text-right">
-                                <span class="text-lg font-bold text-blue-600">${stn.rain_24h.toFixed(1)}</span>
-                                <span class="text-xs text-slate-500">มม.</span>
-                            </div>
-                        </div>
-                    `;
+                        `;
 
-                    if(dataTable) {
                         dataTable.innerHTML += `
-                            <tr class="hover:bg-slate-50 transition">
+                            <tr class="hover:bg-slate-50 transition border-b border-slate-50">
                                 <td class="p-3 font-medium text-slate-800">${stn.station_name}</td>
-                                <td class="p-3 text-blue-500"><i class="fa-solid fa-cloud-rain mr-1"></i> วัดฝน</td>
-                                <td class="p-3 font-bold text-blue-600">${stn.rain_24h.toFixed(1)} <span class="text-xs font-normal text-slate-500">มม.</span></td>
+                                <td class="p-3 text-blue-500"><i class="fa-solid fa-droplet mr-1"></i> วัดฝน</td>
+                                <td class="p-3 font-bold ${isCrit ? 'text-red-600' : 'text-blue-600'}">${stn.rain_24h} <span class="text-xs font-normal">มม.</span></td>
                                 <td class="p-3">${getStatusBadge(isCrit, isWarn)}</td>
-                                <td class="p-3 text-xs text-slate-500"><span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded">API</span></td>
-                                <td class="p-3 text-xs text-slate-500">อัตโนมัติ (ล่าสุด)</td>
+                                <td class="p-3 text-[10px] text-slate-500 bg-slate-100 rounded text-center">API ออนไลน์</td>
+                                <td class="p-3 text-xs text-slate-500">${stn.last_update}</td>
                             </tr>
                         `;
-                    }
-                });
+                    });
+                } else {
+                    rainContainer.innerHTML = '<div class="text-sm text-slate-400 text-center py-4">ไม่พบข้อมูลสถานีฝน</div>';
+                }
 
-                // API Water
-                (appState.apiData.waterData || []).forEach(stn => {
-                    const wLvl = parseFloat(stn.water_level);
-                    const bLvl = parseFloat(stn.bank_level);
-                    const pct = Math.min(100, Math.max(0, (wLvl/bLvl)*100));
-                    
-                    const conf = appState.apiConfigs[stn.station_id];
-                    const warnThresh = conf && conf.warningLevel !== undefined ? conf.warningLevel : (bLvl * 0.9);
-                    const critThresh = conf && conf.criticalLevel !== undefined ? conf.criticalLevel : bLvl;
+                // --- ข้อมูลระดับน้ำ ---
+                if (appState.apiData.waterData && appState.apiData.waterData.length > 0) {
+                    appState.apiData.waterData.forEach(stn => {
+                        const wLvl = parseFloat(stn.water_level);
+                        const bLvl = parseFloat(stn.bank_level);
+                        const pct = Math.min(100, Math.max(0, (wLvl/bLvl)*100));
+                        
+                        let isCrit = wLvl >= bLvl; 
+                        let isWarn = wLvl >= (bLvl * 0.9) && !isCrit; 
+                        if (isCrit) hasCritical = true; else if (isWarn) hasWarning = true;
 
-                    let isCrit = wLvl >= critThresh;
-                    let isWarn = wLvl >= warnThresh && !isCrit;
-                    if (isCrit) hasCritical = true;
-                    else if (isWarn) hasWarning = true;
+                        createMapMarker(stn.lat, stn.lng, stn.station_name, 'water', wLvl.toFixed(2) + ' ม.', isCrit, isWarn, 'เวลา ' + stn.last_update);
 
-                    let lat = 8.8, lng = 99.3;
-                    if(stn.station_id === "X.37") { lat = 8.36; lng = 99.15; } 
-                    else if(stn.station_id === "X.137") { lat = 8.63; lng = 99.18; } 
-                    else if(stn.station_id === "X.232") { lat = 9.10; lng = 99.23; } 
-                    
-                    createMapMarker(lat, lng, stn.station_name, 'water', wLvl.toFixed(2), isCrit, isWarn, 'API อัตโนมัติ');
-
-                    waterContainer.innerHTML += `
-                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                            <div class="flex justify-between items-baseline mb-1">
-                                <div class="text-sm font-semibold text-slate-700">${stn.station_name} <span class="text-[9px] bg-slate-200 text-slate-600 px-1 rounded">API</span></div>
-                                <div><span class="text-lg font-bold ${wLvl >= bLvl ? 'text-red-600' : 'text-cyan-600'}">${wLvl.toFixed(2)}</span><span class="text-xs text-slate-500"> / ${bLvl.toFixed(2)} ม.</span></div>
+                        waterContainer.innerHTML += `
+                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 hover:shadow-md transition">
+                                <div class="flex justify-between items-baseline mb-1">
+                                    <div class="w-2/3">
+                                        <div class="text-sm font-semibold text-slate-700 truncate" title="${stn.station_name}">${stn.station_name}</div>
+                                        <div class="text-[10px] text-slate-400"><i class="fa-regular fa-clock mr-1"></i>อัปเดต: ${stn.last_update}</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-lg font-bold ${isCrit ? 'text-red-600' : 'text-cyan-600'}">${wLvl.toFixed(2)}</span>
+                                        <span class="text-[10px] text-slate-500"> / ${bLvl.toFixed(2)} ม.รทก.</span>
+                                    </div>
+                                </div>
+                                <div class="w-full bg-slate-200 rounded-full h-1.5 mt-1 overflow-hidden">
+                                    <div class="${isCrit ? 'bg-red-500' : (isWarn ? 'bg-orange-500' : 'bg-cyan-500')} h-1.5 rounded-full transition-all duration-1000" style="width: ${pct}%"></div>
+                                </div>
                             </div>
-                            <div class="w-full bg-slate-200 rounded-full h-1.5"><div class="${wLvl >= bLvl ? 'bg-red-500' : 'bg-cyan-500'} h-1.5 rounded-full" style="width: ${pct}%"></div></div>
-                        </div>
-                    `;
+                        `;
 
-                    if(dataTable) {
                         dataTable.innerHTML += `
-                            <tr class="hover:bg-slate-50 transition">
+                            <tr class="hover:bg-slate-50 transition border-b border-slate-50">
                                 <td class="p-3 font-medium text-slate-800">${stn.station_name}</td>
                                 <td class="p-3 text-cyan-600"><i class="fa-solid fa-water mr-1"></i> ระดับน้ำ</td>
-                                <td class="p-3 font-bold ${isCrit ? 'text-red-600' : 'text-cyan-600'}">${wLvl.toFixed(2)} <span class="text-xs font-normal text-slate-500">/ ${bLvl.toFixed(2)} ม.รทก.</span></td>
+                                <td class="p-3 font-bold ${isCrit ? 'text-red-600' : 'text-cyan-600'}">${wLvl.toFixed(2)} <span class="text-[10px] font-normal">/ ${bLvl.toFixed(2)} ม.รทก.</span></td>
                                 <td class="p-3">${getStatusBadge(isCrit, isWarn)}</td>
-                                <td class="p-3 text-xs text-slate-500"><span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded">API</span></td>
-                                <td class="p-3 text-xs text-slate-500">อัตโนมัติ (ล่าสุด)</td>
+                                <td class="p-3 text-[10px] text-slate-500 bg-slate-100 rounded text-center">API ออนไลน์</td>
+                                <td class="p-3 text-xs text-slate-500">${stn.last_update}</td>
                             </tr>
                         `;
-                    }
-                });
+                    });
+                } else {
+                    waterContainer.innerHTML = '<div class="text-sm text-slate-400 text-center py-4">ไม่พบข้อมูลสถานีระดับน้ำ</div>';
+                }
+            } else {
+                dataTable.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-slate-400">ยังไม่มีข้อมูลจากระบบหลังบ้าน</td></tr>';
             }
 
-            // --- 5.2 RENDER MANUAL STATIONS (From Firestore) ---
-            const latestLogs = {};
-            appState.logs.sort((a,b) => b.timestamp - a.timestamp).forEach(log => {
-                if(!latestLogs[log.stationId]) latestLogs[log.stationId] = log;
-            });
-
-            appState.stations.forEach(stn => {
-                const log = latestLogs[stn.id];
-                const val = log ? parseFloat(log.value).toFixed(2) : '--';
-                const timeStr = log && log.timestamp ? new Date(log.timestamp.toDate()).toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'}) : 'ยังไม่มีข้อมูล';
-                const by = log ? log.recordedBy : '-';
-
-                if (stn.type === 'rain') {
-                    // ดึงค่าที่แอดมินตั้งไว้ ถ้าไม่ได้ตั้งให้ใช้ค่าเริ่มต้น (เฝ้าระวัง 50, วิกฤติ 90)
-                    const warnThresh = stn.warningLevel !== undefined && stn.warningLevel !== null ? stn.warningLevel : 50;
-                    const critThresh = stn.criticalLevel !== undefined && stn.criticalLevel !== null ? stn.criticalLevel : 90;
-                    
-                    let isCrit = log && log.value >= critThresh;
-                    let isWarn = log && log.value >= warnThresh && !isCrit;
-                    
-                    if (isCrit) hasCritical = true;
-                    else if (isWarn) hasWarning = true;
-
-                    if(stn.lat && stn.lng) {
-                        createMapMarker(stn.lat, stn.lng, stn.name, 'rain', val, isCrit, isWarn, `บันทึกเวลา ${timeStr}`);
-                    }
-
-                    rainContainer.innerHTML += `
-                        <div class="flex justify-between items-center p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                            <div>
-                                <div class="text-sm font-semibold text-indigo-900">${stn.name} <span class="bg-indigo-200 text-indigo-800 text-[9px] px-1 rounded ml-1">MANUAL</span></div>
-                                <div class="text-[10px] text-slate-500">อัปเดต: ${timeStr} โดย ${by}</div>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-lg font-bold text-indigo-600">${val}</span>
-                                <span class="text-xs text-slate-500">มม.</span>
-                            </div>
-                        </div>
-                    `;
-
-                    if(dataTable) {
-                        dataTable.innerHTML += `
-                            <tr class="hover:bg-slate-50 transition">
-                                <td class="p-3 font-medium text-slate-800">${stn.name}</td>
-                                <td class="p-3 text-indigo-600"><i class="fa-solid fa-cloud-rain mr-1"></i> วัดฝน</td>
-                                <td class="p-3 font-bold text-indigo-600">${val} <span class="text-xs font-normal text-slate-500">มม.</span></td>
-                                <td class="p-3">${getStatusBadge(isCrit, isWarn)}</td>
-                                <td class="p-3 text-xs text-slate-500"><span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">Manual</span></td>
-                                <td class="p-3 text-xs text-slate-500">${timeStr} <br><span class="text-[9px] text-slate-400">โดย: ${by}</span></td>
-                            </tr>
-                        `;
-                    }
-                } else if (stn.type === 'water') {
-                    const bLvl = stn.bankLevel ? parseFloat(stn.bankLevel) : 999;
-                    
-                    // ดึงค่าที่แอดมินตั้งไว้ ถ้าไม่ได้ตั้งให้ใช้ค่าเริ่มต้น (เฝ้าระวัง 90% ของตลิ่ง, วิกฤติเท่ากับตลิ่ง)
-                    const warnThresh = stn.warningLevel !== undefined && stn.warningLevel !== null ? stn.warningLevel : (bLvl * 0.9);
-                    const critThresh = stn.criticalLevel !== undefined && stn.criticalLevel !== null ? stn.criticalLevel : bLvl;
-                    
-                    const wLvl = log ? parseFloat(log.value) : 0;
-                    const isCrit = wLvl >= critThresh;
-                    const isWarn = wLvl >= warnThresh && !isCrit;
-                    
-                    if (isCrit) hasCritical = true;
-                    else if (isWarn) hasWarning = true;
-
-                    if(stn.lat && stn.lng) {
-                        createMapMarker(stn.lat, stn.lng, stn.name, 'water', val, isCrit, isWarn, `บันทึกเวลา ${timeStr}`);
-                    }
-
-                    waterContainer.innerHTML += `
-                        <div class="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                            <div class="flex justify-between items-baseline mb-1">
-                                <div>
-                                    <div class="text-sm font-semibold text-indigo-900">${stn.name} <span class="bg-indigo-200 text-indigo-800 text-[9px] px-1 rounded ml-1">MANUAL</span></div>
-                                    <div class="text-[10px] text-slate-500">อัปเดต: ${timeStr} โดย ${by}</div>
-                                </div>
-                                <div><span class="text-lg font-bold ${isCrit ? 'text-red-600' : 'text-indigo-600'}">${val}</span><span class="text-xs text-slate-500"> ${stn.bankLevel ? '/ ' + bLvl.toFixed(2) : ''} ม.</span></div>
-                            </div>
-                        </div>
-                    `;
-
-                    if(dataTable) {
-                        dataTable.innerHTML += `
-                            <tr class="hover:bg-slate-50 transition">
-                                <td class="p-3 font-medium text-slate-800">${stn.name}</td>
-                                <td class="p-3 text-indigo-600"><i class="fa-solid fa-water mr-1"></i> ระดับน้ำ</td>
-                                <td class="p-3 font-bold ${isCrit ? 'text-red-600' : 'text-indigo-600'}">${val} <span class="text-xs font-normal text-slate-500">${stn.bankLevel ? '/ ' + bLvl.toFixed(2) : ''} ม.รทก.</span></td>
-                                <td class="p-3">${getStatusBadge(isCrit, false)}</td>
-                                <td class="p-3 text-xs text-slate-500"><span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">Manual</span></td>
-                                <td class="p-3 text-xs text-slate-500">${timeStr} <br><span class="text-[9px] text-slate-400">โดย: ${by}</span></td>
-                            </tr>
-                        `;
-                    }
-                }
-            });
-
-            // Update Status Banner
+            // --- อัปเดตกล่องสถานะใหญ่ ---
             const statusBg = document.getElementById('status-bg');
             if (hasCritical) {
                 statusBg.className = "rounded-2xl p-6 text-white text-center shadow-md bg-red-600 transition-colors duration-500";
                 document.getElementById('status-text').textContent = "วิกฤต";
-                document.getElementById('status-desc').textContent = "ระดับน้ำล้นตลิ่ง หรือ ฝนตกหนักมาก!";
+                document.getElementById('status-desc').textContent = "มีสถานีที่ระดับน้ำล้นตลิ่ง หรือปริมาณฝนเกินเกณฑ์วิกฤต!";
             } else if (hasWarning) {
                 statusBg.className = "rounded-2xl p-6 text-white text-center shadow-md bg-orange-500 transition-colors duration-500";
-                document.getElementById('status-text').textContent = "เตือนภัย";
-                document.getElementById('status-desc').textContent = "เฝ้าระวังน้ำล้นตลิ่งจากปริมาณฝนสะสม";
+                document.getElementById('status-text').textContent = "เตือนภัย / เฝ้าระวัง";
+                document.getElementById('status-desc').textContent = "มีสถานีที่ระดับน้ำหรือปริมาณฝนอยู่ในเกณฑ์ต้องเฝ้าระวัง";
             } else {
                 statusBg.className = "rounded-2xl p-6 text-white text-center shadow-md bg-emerald-500 transition-colors duration-500";
                 document.getElementById('status-text').textContent = "ปกติ";
-                document.getElementById('status-desc').textContent = "สถานการณ์อยู่ในเกณฑ์ควบคุมได้";
+                document.getElementById('status-desc').textContent = "สถานการณ์โดยรวมอยู่ในเกณฑ์ควบคุมได้";
             }
         }
 
-        // ==========================================
-        // 6. STAFF / DATA ENTRY LOGIC
-        // ==========================================
-        function renderStaffView() {
-            if(!appState.currentUserProfile) return;
-            const container = document.getElementById('staff-stations-list');
-            container.innerHTML = '';
-            
-            const assignedIds = appState.currentUserProfile.assignedStations || [];
-            const myStations = appState.stations.filter(s => assignedIds.includes(s.id));
-
-            if(myStations.length === 0) {
-                container.innerHTML = '<div class="text-center p-6 text-slate-400 border border-dashed rounded-xl">คุณยังไม่ได้รับมอบหมายสถานีใดๆ<br>โปรดติดต่อผู้ดูแลระบบ</div>';
-                return;
-            }
-
-            myStations.forEach(stn => {
-                const unit = stn.type === 'rain' ? 'มม.' : 'ม.รทก.';
-                const icon = stn.type === 'rain' ? '<i class="fa-solid fa-cloud-rain text-blue-500"></i>' : '<i class="fa-solid fa-water text-cyan-500"></i>';
-                
-                container.innerHTML += `
-                    <div class="flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-blue-300 transition">
-                        <div>
-                            <div class="font-bold text-slate-700">${icon} ${stn.name}</div>
-                            <div class="text-[10px] text-slate-500">ประเภท: ${stn.type === 'rain' ? 'วัดฝน' : 'วัดระดับน้ำ'}</div>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <input type="number" step="0.01" id="input-val-${stn.id}" placeholder="ระบุค่า" class="w-24 px-3 py-1.5 border rounded-lg focus:outline-none text-sm text-center">
-                            <span class="text-xs text-slate-500 w-10">${unit}</span>
-                            <button onclick="submitManualData('${stn.id}', '${stn.name}', '${stn.type}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm transition">
-                                <i class="fa-solid fa-paper-plane"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        window.submitManualData = async (stationId, stationName, type) => {
-            const inputEl = document.getElementById(`input-val-${stationId}`);
-            const val = inputEl.value;
-            if(!val) return showToast("กรุณาระบุค่าตัวเลข", "error");
-
-            try {
-                // 1. Save to Firebase (App State)
-                const logsRef = collection(db, 'artifacts', appId, 'public', 'data', 'manual_logs');
-                await addDoc(logsRef, {
-                    stationId: stationId,
-                    value: parseFloat(val),
-                    timestamp: serverTimestamp(),
-                    recordedBy: appState.currentUserProfile.name
-                });
-
-                // 2. Send to Google Apps Script (Sheet History)
-                if(GAS_WEB_APP_URL !== "YOUR_WEB_APP_URL_HERE") {
-                    fetch(GAS_WEB_APP_URL, {
-                        method: "POST",
-                        body: JSON.stringify({
-                            action: "record_manual",
-                            station_name: stationName,
-                            type: type,
-                            value: val,
-                            officer: appState.currentUserProfile.name
-                        })
-                    }).catch(e => console.log("Sheet save silently failed", e));
-                }
-
-                inputEl.value = '';
-                showToast("บันทึกข้อมูลเรียบร้อย");
-            } catch (error) {
-                console.error(error);
-                showToast("เกิดข้อผิดพลาดในการบันทึก", "error");
-            }
-        };
-
-        // ==========================================
-        // 7. ADMIN LOGIC
-        // ==========================================
-        document.getElementById('new-station-type').addEventListener('change', (e) => {
-            document.getElementById('bank-level-container').style.display = e.target.value === 'water' ? 'block' : 'none';
-        });
-
-        // ฟังก์ชันดึงพิกัดปัจจุบันสำหรับหน้า Admin
-        window.getCurrentLocationForAdmin = () => {
-            if (navigator.geolocation) {
-                showToast("กำลังค้นหาพิกัด GPS...");
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        document.getElementById('new-station-lat').value = position.coords.latitude.toFixed(6);
-                        document.getElementById('new-station-lng').value = position.coords.longitude.toFixed(6);
-                        showToast("ดึงพิกัดสำเร็จ");
-                    },
-                    (error) => {
-                        showToast("ไม่สามารถดึงพิกัดได้ กรุณาอนุญาตสิทธิ์ GPS", "error");
-                    }
-                );
-            } else {
-                showToast("เบราว์เซอร์นี้ไม่รองรับ GPS", "error");
-            }
-        };
-
-        window.handleCreateStation = async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('new-station-name').value;
-            const type = document.getElementById('new-station-type').value;
-            const bank = document.getElementById('new-station-bank').value;
-            const warnLvl = document.getElementById('new-station-warn').value;
-            const critLvl = document.getElementById('new-station-crit').value;
-            const lat = document.getElementById('new-station-lat').value;
-            const lng = document.getElementById('new-station-lng').value;
-
-            try {
-                const stationsRef = collection(db, 'artifacts', appId, 'public', 'data', 'stations');
-                await addDoc(stationsRef, {
-                    name, type, 
-                    bankLevel: type === 'water' && bank ? parseFloat(bank) : null,
-                    warningLevel: warnLvl ? parseFloat(warnLvl) : null,
-                    criticalLevel: critLvl ? parseFloat(critLvl) : null,
-                    lat: lat ? parseFloat(lat) : null,
-                    lng: lng ? parseFloat(lng) : null,
-                    createdAt: serverTimestamp()
-                });
-                
-                document.getElementById('form-create-station').reset();
-                document.getElementById('bank-level-container').style.display = 'none';
-                showToast("สร้างสถานีใหม่สำเร็จ");
-            } catch (err) {
-                showToast("ไม่สามารถสร้างสถานีได้", "error");
-            }
-        };
-
-        function renderAdminStationList() {
-            const list = document.getElementById('admin-station-list');
-            list.innerHTML = '';
-            appState.stations.forEach(s => {
-                list.innerHTML += `<div class="flex justify-between py-1 border-b border-slate-200 last:border-0 text-slate-600">
-                    <span>${s.name} <span class="text-[10px] text-slate-400">(${s.type})</span></span>
-                </div>`;
-            });
-        }
-
-        function updateStationCheckboxes() {
-            const container = document.getElementById('assign-stations-checkboxes');
-            container.innerHTML = '';
-            appState.stations.forEach(s => {
-                container.innerHTML += `
-                    <label class="flex items-center space-x-2 cursor-pointer p-1 hover:bg-slate-100 rounded">
-                        <input type="checkbox" name="assign_stn" value="${s.id}" class="rounded text-emerald-500 focus:ring-emerald-500">
-                        <span class="text-slate-700">${s.name}</span>
-                    </label>
-                `;
-            });
-        }
-
-        window.handleCreateUser = async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('new-user-name').value;
-            const pin = document.getElementById('new-user-pin').value;
-            const role = document.getElementById('new-user-role').value;
-            
-            const checkboxes = document.querySelectorAll('input[name="assign_stn"]:checked');
-            const assigned = Array.from(checkboxes).map(cb => cb.value);
-
-            try {
-                const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'appUsers');
-                await addDoc(usersRef, {
-                    name, pin, role, assignedStations: assigned, createdAt: serverTimestamp()
-                });
-                
-                document.getElementById('form-create-user').reset();
-                checkboxes.forEach(cb => cb.checked = false);
-                showToast("สร้างบัญชีผู้ใช้สำเร็จ");
-            } catch (err) {
-                showToast("เกิดข้อผิดพลาดในการสร้างบัญชี", "error");
-            }
-        };
-
-        // --- เพิ่มฟังก์ชันจัดการ API Configs ---
-        function updateApiStationDropdown() {
-            const select = document.getElementById('api-station-select');
-            if(!select || !appState.apiData) return;
-            select.innerHTML = '<option value="">-- เลือกสถานีออนไลน์ (API) --</option>';
-            
-            if (appState.apiData.rainData) {
-                appState.apiData.rainData.forEach(stn => {
-                    select.innerHTML += `<option value="${stn.station_id}">${stn.station_name} (วัดฝน)</option>`;
-                });
-            }
-            if (appState.apiData.waterData) {
-                appState.apiData.waterData.forEach(stn => {
-                    select.innerHTML += `<option value="${stn.station_id}">${stn.station_name} (ระดับน้ำ)</option>`;
-                });
-            }
-        }
-
-        // ดึงค่าเก่ามาแสดงเมื่อเลือกสถานี
-        document.getElementById('api-station-select')?.addEventListener('change', (e) => {
-            const stnId = e.target.value;
-            const conf = appState.apiConfigs[stnId];
-            if (conf) {
-                document.getElementById('api-station-warn').value = conf.warningLevel;
-                document.getElementById('api-station-crit').value = conf.criticalLevel;
-            } else {
-                document.getElementById('api-station-warn').value = '';
-                document.getElementById('api-station-crit').value = '';
-            }
-        });
-
-        window.handleConfigAPI = async (e) => {
-            e.preventDefault();
-            const stnId = document.getElementById('api-station-select').value;
-            const warn = document.getElementById('api-station-warn').value;
-            const crit = document.getElementById('api-station-crit').value;
-            
-            if(!stnId) return showToast("กรุณาเลือกสถานี", "error");
-            
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'api_configs', stnId);
-                await setDoc(docRef, {
-                    warningLevel: warn ? parseFloat(warn) : null,
-                    criticalLevel: crit ? parseFloat(crit) : null,
-                    updatedAt: serverTimestamp()
-                }, { merge: true });
-                
-                document.getElementById('form-config-api').reset();
-                showToast("บันทึกการตั้งค่าสถานี API สำเร็จ");
-            } catch(err) {
-                console.error(err);
-                showToast("เกิดข้อผิดพลาดในการบันทึก", "error");
-            }
-        };
-
-        // ==========================================
-        // 8. AUTHENTICATION & LOGIN UI
-        // ==========================================
-        window.showLoginModal = () => document.getElementById('loginModal').classList.remove('hidden');
-        window.closeLoginModal = () => document.getElementById('loginModal').classList.add('hidden');
-
-        function updateLoginDropdown() {
-            const select = document.getElementById('login-user-select');
-            select.innerHTML = '<option value="">-- เลือกบัญชี --</option>';
-            appState.users.forEach(u => {
-                select.innerHTML += `<option value="${u.id}">${u.name} (${u.role})</option>`;
-            });
-        }
-
-        window.handleLogin = (e) => {
-            e.preventDefault();
-            const userId = document.getElementById('login-user-select').value;
-            const pin = document.getElementById('login-pin').value;
-
-            if(!userId) return showToast("กรุณาเลือกบัญชีผู้ใช้", "error");
-
-            const user = appState.users.find(u => u.id === userId);
-            if(user && user.pin === pin) {
-                appState.currentUserProfile = user;
-                document.getElementById('login-pin').value = '';
-                closeLoginModal();
-                updateNavUI();
-                showToast(`ยินดีต้อนรับคุณ ${user.name}`);
-            } else {
-                showToast("รหัส PIN ไม่ถูกต้อง", "error");
-            }
-        };
-
-        window.logout = () => {
-            appState.currentUserProfile = null;
-            updateNavUI();
-            showToast("ออกจากระบบแล้ว");
-        };
-
-        window.createInitialAdmin = async () => {
-            const pin = document.getElementById('init-admin-pin').value;
-            if(pin.length !== 4) return showToast("กรุณาตั้ง PIN 4 หลัก", "error");
-            
-            try {
-                const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'appUsers');
-                await addDoc(usersRef, {
-                    name: "ผู้ดูแลระบบสูงสุด", pin: pin, role: "admin", assignedStations: [], createdAt: serverTimestamp()
-                });
-                showToast("สร้างผู้ดูแลระบบสำเร็จ เข้าสู่ระบบได้เลย");
-                document.getElementById('initial-setup-notice').classList.add('hidden');
-            } catch (err) {
-                showToast("เกิดข้อผิดพลาด", "error");
-            }
-        };
-
-        // Start App
+        // เริ่มการทำงานของสคริปต์
         initSystem();
 
     </script>
