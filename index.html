@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Leaflet.js สำหรับแผนที่ -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -27,7 +26,6 @@
         <span id="toast-msg" class="text-sm font-medium">Message</span>
     </div>
 
-    <!-- Navbar -->
     <nav class="bg-blue-900 text-white shadow-lg z-10 sticky top-0">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center">
@@ -44,7 +42,7 @@
                 </div>
                 <div id="auth-section">
                     <button onclick="showLoginModal()" id="btn-login-trigger" class="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center">
-                        <i class="fa-solid fa-user mr-2"></i> เข้าสู่ระบบเจ้าหน้าที่
+                        <i class="fa-solid fa-user mr-2"></i> เข้าสู่ระบบ
                     </button>
                     <div id="user-profile-menu" class="hidden flex items-center space-x-3">
                         <div class="text-right hidden sm:block">
@@ -60,15 +58,15 @@
         <div class="bg-white shadow-sm border-b">
             <div class="max-w-7xl mx-auto px-4 flex overflow-x-auto">
                 <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-4 py-3 text-sm tab-active whitespace-nowrap"><i class="fa-solid fa-chart-line mr-2"></i>ภาพรวมสถานการณ์</button>
-                <button onclick="switchTab('staff')" id="tab-staff" class="px-4 py-3 text-sm tab-inactive whitespace-nowrap hidden"><i class="fa-solid fa-pen-to-square mr-2"></i>บันทึกข้อมูลสถานี</button>
+                <button onclick="switchTab('staff')" id="tab-staff" class="px-4 py-3 text-sm tab-inactive whitespace-nowrap hidden"><i class="fa-solid fa-pen-to-square mr-2"></i>บันทึกข้อมูลสถานี (Manual)</button>
                 <button onclick="switchTab('admin')" id="tab-admin" class="px-4 py-3 text-sm tab-inactive whitespace-nowrap hidden"><i class="fa-solid fa-users-gear mr-2"></i>จัดการระบบ (Admin)</button>
             </div>
         </div>
     </nav>
 
-    <!-- MAIN CONTENT -->
     <main class="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full relative">
-        <!-- VIEW: DASHBOARD -->
+        
+        <!-- DASHBOARD TAB -->
         <div id="view-dashboard" class="space-y-6">
             <div id="status-bg" class="rounded-2xl p-6 text-white text-center shadow-md bg-slate-400 transition-colors duration-500">
                 <h2 class="text-sm opacity-90 mb-1">สถานการณ์โดยรวม</h2>
@@ -76,18 +74,15 @@
                 <p id="status-desc" class="text-sm mt-2 font-medium"></p>
             </div>
 
-            <!-- แผนที่เฝ้าระวัง -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-slate-800"><i class="fa-solid fa-map-location-dot mr-2 text-indigo-500"></i>แผนที่เฝ้าระวังสถานการณ์น้ำ</h3>
-                </div>
+                <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-map-location-dot mr-2 text-indigo-500"></i>แผนที่เฝ้าระวังสถานการณ์น้ำ</h3>
                 <div id="map-container" class="w-full h-80 md:h-96 rounded-xl overflow-hidden relative z-0 border border-slate-200"></div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="space-y-6">
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-                        <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-cloud-rain mr-2 text-blue-500"></i>ข้อมูลปริมาณฝน (ออนไลน์ API)</h3>
+                        <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-cloud-rain mr-2 text-blue-500"></i>ข้อมูลปริมาณฝน (จาก ONWR)</h3>
                         <div id="rain-stations-container" class="space-y-3">
                             <div class="text-sm text-slate-400 text-center py-4">กำลังโหลดข้อมูล...</div>
                         </div>
@@ -96,21 +91,17 @@
 
                 <div class="space-y-6">
                     <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                        <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-water mr-2 text-cyan-500"></i>ระดับน้ำแม่น้ำตาปี (ออนไลน์ API)</h3>
+                        <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-water mr-2 text-cyan-500"></i>ระดับน้ำแม่น้ำตาปี (จาก ONWR)</h3>
                         <div id="water-stations-container" class="space-y-3">
                             <div class="text-sm text-slate-400 text-center py-4">กำลังโหลดข้อมูล...</div>
                         </div>
                     </div>
                     
-                    <!-- เรดาร์ตรวจอากาศ (TMD iframe) -->
                     <div class="bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-700 text-white">
-                        <div class="flex justify-between items-center mb-3">
-                            <h3 class="font-bold"><i class="fa-solid fa-satellite-dish mr-2 text-green-400"></i>เรดาร์ตรวจอากาศ (TMD)</h3>
-                            <span class="text-[10px] bg-slate-700 px-2 py-1 rounded">สุราษฎร์ธานี</span>
-                        </div>
-                        <div class="relative w-full rounded-xl overflow-hidden bg-slate-900 flex justify-center items-center h-48 md:h-64">
-                            <!-- ใช้ iframe เลี่ยงการบล็อก Hotlink ของภาพกรมอุตุฯ -->
-                            <iframe src="https://weather.tmd.go.th/srt.php" scrolling="no" frameborder="0" class="w-full h-full" style="pointer-events: none; overflow: hidden;"></iframe>
+                        <h3 class="font-bold mb-3"><i class="fa-solid fa-satellite-dish mr-2 text-green-400"></i>เรดาร์ตรวจอากาศ สุราษฎร์ธานี</h3>
+                        <!-- ปรับการซูมและแสดงผลเรดาร์สุราษฎร์ธานี -->
+                        <div class="relative w-full rounded-xl overflow-hidden bg-slate-900 flex justify-center items-center h-64 md:h-80">
+                            <iframe src="https://weather.tmd.go.th/srt.php" scrolling="no" frameborder="0" class="w-full h-[600px] -mt-[150px]" style="pointer-events: none;"></iframe>
                         </div>
                     </div>
                 </div>
@@ -135,25 +126,88 @@
             </div>
         </div>
 
-        <!-- VIEW: STAFF & ADMIN omitted in simple view code, standard logic remains below -->
+        <!-- STAFF TAB -->
         <div id="view-staff" class="hidden max-w-3xl mx-auto bg-white rounded-2xl shadow-sm p-6 border border-slate-100">
-            <h2 class="text-xl font-bold text-slate-800 mb-2"><i class="fa-solid fa-clipboard-list text-blue-500 mr-2"></i>บันทึกข้อมูลสถานี</h2>
+            <h2 class="text-xl font-bold text-slate-800 mb-2"><i class="fa-solid fa-clipboard-list text-blue-500 mr-2"></i>บันทึกข้อมูลสถานีที่รับผิดชอบ</h2>
+            <p class="text-sm text-slate-500 mb-6">สำหรับสถานีที่ไม่มี API และต้องกรอกข้อมูลด้วยมือ</p>
             <div id="staff-stations-list" class="space-y-4"></div>
         </div>
-        
+
+        <!-- ADMIN TAB (รหัสส่วนนี้ที่เคยถูกลบไป ผมเอากลับมาให้ครบแล้วครับ) -->
         <div id="view-admin" class="hidden space-y-6">
-             <div class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-md">
+            <div class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-md">
                 <h2 class="text-xl font-bold mb-1"><i class="fa-solid fa-shield-halved mr-2"></i>แผงควบคุมผู้ดูแลระบบ</h2>
+                <p class="text-sm text-slate-300">สร้างสถานี (Manual), จัดการเจ้าหน้าที่, และกำหนดสิทธิ์</p>
             </div>
-            <div class="text-center p-10 bg-white rounded-2xl shadow-sm">
-                <i class="fa-solid fa-circle-check text-5xl text-emerald-500 mb-4"></i>
-                <h3 class="text-lg font-bold text-slate-700">เข้าสู่ระบบแอดมินสำเร็จ</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 1. สร้างสถานี Manual -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-slate-800 mb-4 border-b pb-2">1. สร้างสถานีใหม่ (จุดเฝ้าระวัง Manual)</h3>
+                    <form id="form-create-station" onsubmit="handleCreateStation(event)">
+                        <div class="mb-3">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อสถานี / จุดเฝ้าระวัง</label>
+                            <input type="text" id="new-station-name" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">ประเภทการวัด</label>
+                            <select id="new-station-type" class="w-full px-3 py-2 border rounded-lg text-sm">
+                                <option value="rain">ปริมาณฝน (มม.)</option>
+                                <option value="water">ระดับน้ำ (ม.รทก.)</option>
+                            </select>
+                        </div>
+                        <div class="mb-4" id="bank-level-container" style="display:none;">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">ระดับตลิ่งเฝ้าระวัง (ม.รทก.)</label>
+                            <input type="number" step="0.01" id="new-station-bank" class="w-full px-3 py-2 border rounded-lg text-sm">
+                        </div>
+                        <div class="flex justify-between items-end mb-1">
+                            <label class="block text-xs font-bold text-slate-700">พิกัดแผนที่ (ละติจูด, ลองจิจูด)</label>
+                        </div>
+                        <div class="flex space-x-3 mb-4">
+                            <input type="number" step="0.000001" id="new-station-lat" placeholder="Lat (เช่น 8.803)" class="flex-1 px-3 py-2 border rounded-lg text-sm">
+                            <input type="number" step="0.000001" id="new-station-lng" placeholder="Lng (เช่น 99.362)" class="flex-1 px-3 py-2 border rounded-lg text-sm">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white rounded-lg py-2 text-sm font-bold hover:bg-blue-700">เพิ่มสถานี</button>
+                    </form>
+                    <h4 class="font-bold text-xs text-slate-500 mt-6 mb-2">รายชื่อสถานี Manual ในระบบ</h4>
+                    <div id="admin-station-list" class="space-y-2 max-h-40 overflow-y-auto bg-slate-50 p-2 rounded-lg text-sm border"></div>
+                </div>
+
+                <!-- 2. จัดการผู้ใช้ & มอบหมาย -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-slate-800 mb-4 border-b pb-2">2. จัดการบัญชี & มอบหมายสถานี</h3>
+                    <form id="form-create-user" onsubmit="handleCreateUser(event)">
+                        <div class="flex space-x-3 mb-3">
+                            <div class="flex-1">
+                                <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อเจ้าหน้าที่</label>
+                                <input type="text" id="new-user-name" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                            </div>
+                            <div class="w-1/3">
+                                <label class="block text-xs font-bold text-slate-700 mb-1">PIN 4 หลัก</label>
+                                <input type="text" pattern="[0-9]{4}" maxlength="4" id="new-user-pin" required class="w-full px-3 py-2 border rounded-lg text-sm text-center">
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">ระดับสิทธิ์</label>
+                            <select id="new-user-role" class="w-full px-3 py-2 border rounded-lg text-sm">
+                                <option value="staff">เจ้าหน้าที่บันทึกข้อมูล (Staff)</option>
+                                <option value="admin">ผู้ดูแลระบบ (Admin)</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">มอบหมายสถานีให้ดูแล (เฉพาะ Staff)</label>
+                            <div id="assign-stations-checkboxes" class="max-h-32 overflow-y-auto bg-slate-50 p-3 rounded-lg border text-sm space-y-2">
+                                <!-- สร้างเช็คบ็อกซ์จาก Javascript -->
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-emerald-600 text-white rounded-lg py-2 text-sm font-bold hover:bg-emerald-700">บันทึกบัญชีผู้ใช้</button>
+                    </form>
+                </div>
             </div>
         </div>
-
     </main>
 
-    <!-- Login Modal -->
+    <!-- Modal Login -->
     <div id="loginModal" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl relative overflow-hidden">
             <div class="text-center mb-6">
@@ -175,24 +229,24 @@
                 </div>
             </form>
             
+            <!-- กรณีฐานข้อมูลว่างเปล่า (สร้างแอดมินคนแรก) -->
             <div id="initial-setup-notice" class="hidden absolute inset-0 bg-white z-10 flex flex-col items-center justify-center p-6 text-center">
                 <h3 class="font-bold text-lg mb-2">เริ่มต้นใช้งานครั้งแรก</h3>
+                <p class="text-xs text-slate-500 mb-4">ยังไม่มีระบบผู้ดูแล กรุณาสร้าง PIN สำหรับแอดมินคนแรก</p>
                 <input type="text" id="init-admin-pin" placeholder="ตั้ง PIN 4 หลัก" maxlength="4" class="w-full mb-4 px-3 py-2 border text-center font-mono text-xl tracking-widest rounded-lg">
-                <button onclick="createInitialAdmin()" class="w-full py-2 bg-blue-600 text-white rounded-lg font-bold">สร้างระบบ Admin</button>
+                <button onclick="createInitialAdmin()" class="w-full py-2 bg-blue-600 text-white rounded-lg font-bold">สร้างแอดมินสูงสุด</button>
             </div>
         </div>
     </div>
 
-    <!-- FIREBASE & LOGIC -->
+    <!-- SCRIPT LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // URL จาก Google Apps Script ล่าสุดที่คุณ Deploy
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyIGhGzd0BZPFQQNT3AprS40GLD3OZhC8pTyrvXtmPJxa_fl8zQy-nUwIgCyey1cs-D/exec"; 
         
-        // ข้อมูลการเชื่อมต่อ Firebase ของคุณ
         const firebaseConfig = {
             apiKey: "AIzaSyBg7v1zCjlUGuAT4zKJImH9NGFxasLrHRY",
             authDomain: "bannasan-flood.firebaseapp.com",
@@ -207,21 +261,18 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        window.appState = { users: [], apiData: null, currentUserProfile: null };
+        window.appState = { users: [], stations: [], manualLogs: [], apiData: null, currentUserProfile: null };
         let map = null, markersLayer = null;
 
-        const DOM = {
-            dashboard: document.getElementById('view-dashboard'),
-            staff: document.getElementById('view-staff'),
-            admin: document.getElementById('view-admin')
-        };
+        const DOM = { dashboard: document.getElementById('view-dashboard'), staff: document.getElementById('view-staff'), admin: document.getElementById('view-admin') };
 
         async function initSystem() {
             try {
                 await signInAnonymously(auth);
                 fetchAPIData();
-                setInterval(fetchAPIData, 300000);
+                setInterval(fetchAPIData, 900000); // 15 นาที
                 
+                // ดึงข้อมูล Users
                 onSnapshot(collection(db, 'appUsers'), (snapshot) => {
                     appState.users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     updateLoginDropdown();
@@ -231,16 +282,27 @@
                         document.getElementById('initial-setup-notice').classList.add('hidden');
                     }
                 });
+
+                // ดึงข้อมูลสถานี Manual
+                onSnapshot(collection(db, 'stations'), (snapshot) => {
+                    appState.stations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderAdminStationList();
+                    updateStationCheckboxes();
+                    if(appState.currentUserProfile) renderStaffView();
+                });
+
+                // ดึงข้อมูลการกรอก Manual ล่าสุด
+                onSnapshot(collection(db, 'manual_logs'), (snapshot) => {
+                    appState.manualLogs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderDashboard();
+                });
+
             } catch (err) { console.error(err); }
         }
 
         window.switchTab = (tabName) => {
-            DOM.dashboard.classList.add('hidden');
-            DOM.staff.classList.add('hidden');
-            DOM.admin.classList.add('hidden');
-            document.getElementById('tab-dashboard').classList.replace('tab-active', 'tab-inactive');
-            document.getElementById('tab-staff').classList.replace('tab-active', 'tab-inactive');
-            document.getElementById('tab-admin').classList.replace('tab-active', 'tab-inactive');
+            DOM.dashboard.classList.add('hidden'); DOM.staff.classList.add('hidden'); DOM.admin.classList.add('hidden');
+            ['tab-dashboard', 'tab-staff', 'tab-admin'].forEach(id => document.getElementById(id).classList.replace('tab-active', 'tab-inactive'));
             
             if(tabName === 'dashboard') {
                 DOM.dashboard.classList.remove('hidden');
@@ -259,7 +321,7 @@
             try {
                 const response = await fetch(GAS_WEB_APP_URL);
                 appState.apiData = await response.json();
-                document.getElementById('connection-status-text').textContent = "เชื่อมต่อข้อมูลแล้ว (Live)";
+                document.getElementById('connection-status-text').textContent = "เชื่อมต่อข้อมูลแล้ว (Live ONWR)";
                 document.getElementById('connection-status-dot').className = "w-2 h-2 rounded-full mr-2 bg-green-400 blinking-dot";
                 renderDashboard();
             } catch (err) {
@@ -270,12 +332,8 @@
 
         function initMap() {
             if (map) return;
-            map = L.map('map-container').setView([8.800, 99.366], 9);
-            // ใช้แผนที่ OpenStreetMap มาตรฐาน
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 18
-            }).addTo(map);
+            map = L.map('map-container').setView([8.800, 99.366], 10); // ซูมที่ อ.บ้านนาสาร
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
             markersLayer = L.layerGroup().addTo(map);
         }
 
@@ -308,43 +366,45 @@
                                               (warn ? '<span class="bg-orange-100 text-orange-700 px-2 py-1 rounded text-[10px] font-bold">เฝ้าระวัง</span>' : 
                                                       '<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold">ปกติ</span>');
 
+            // 1. เรนเดอร์ข้อมูล API จาก ONWR
             if (appState.apiData) {
-                // Rain
                 (appState.apiData.rainData || []).forEach(stn => {
-                    let isCrit = stn.rain_24h >= 90, isWarn = stn.rain_24h >= 50 && !isCrit;
+                    let val = parseFloat(stn.rain_24h) || 0;
+                    let isCrit = val >= 90, isWarn = val >= 50 && !isCrit;
                     if(isCrit) hasCritical = true; else if(isWarn) hasWarning = true;
                     
-                    createMapMarker(stn.lat, stn.lng, stn.station_name, 'rain', stn.rain_24h, isCrit, isWarn);
+                    createMapMarker(stn.lat, stn.lng, stn.station_name, 'rain', val, isCrit, isWarn);
                     
                     rainC.innerHTML += `
                         <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
                             <div><div class="text-sm font-semibold">${stn.station_name}</div><div class="text-[10px] text-slate-400"><i class="fa-regular fa-clock"></i> อัปเดต: ${stn.last_update}</div></div>
-                            <div class="text-right"><span class="text-lg font-bold ${isCrit?'text-red-500':'text-orange-500'}">${stn.rain_24h.toFixed(1)}</span> <span class="text-xs text-slate-500">มม.</span></div>
+                            <div class="text-right"><span class="text-lg font-bold ${isCrit?'text-red-500':'text-blue-500'}">${val.toFixed(1)}</span> <span class="text-xs text-slate-500">มม.</span></div>
                         </div>`;
                     
                     table.innerHTML += `<tr class="border-b">
                         <td class="p-3">${stn.station_name}</td>
                         <td class="p-3 text-blue-500"><i class="fa-solid fa-cloud-rain"></i> วัดฝน</td>
-                        <td class="p-3 font-bold">${stn.rain_24h.toFixed(1)} <span class="text-xs font-normal">มม.</span></td>
+                        <td class="p-3 font-bold">${val.toFixed(1)} <span class="text-xs font-normal">มม.</span></td>
                         <td class="p-3">${getBadge(isCrit, isWarn)}</td>
-                        <td class="p-3 text-xs text-slate-400">API</td>
+                        <td class="p-3 text-xs text-slate-400">ONWR</td>
                         <td class="p-3 text-xs text-slate-400">${stn.last_update}</td>
                     </tr>`;
                 });
 
-                // Water
                 (appState.apiData.waterData || []).forEach(stn => {
-                    let isCrit = stn.water_level >= stn.bank_level, isWarn = stn.water_level >= (stn.bank_level*0.9) && !isCrit;
+                    let val = parseFloat(stn.water_level) || 0;
+                    let bank = parseFloat(stn.bank_level) || 10;
+                    let isCrit = val >= bank, isWarn = val >= (bank*0.9) && !isCrit;
                     if(isCrit) hasCritical = true; else if(isWarn) hasWarning = true;
-                    let pct = Math.min(100, (stn.water_level/stn.bank_level)*100);
+                    let pct = Math.min(100, (val/bank)*100);
                     
-                    createMapMarker(stn.lat, stn.lng, stn.station_name, 'water', stn.water_level, isCrit, isWarn);
+                    createMapMarker(stn.lat, stn.lng, stn.station_name, 'water', val, isCrit, isWarn);
                     
                     waterC.innerHTML += `
                         <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 mb-3">
                             <div class="flex justify-between mb-1">
                                 <div><div class="text-sm font-semibold">${stn.station_name}</div><div class="text-[10px] text-slate-400"><i class="fa-regular fa-clock"></i> อัปเดต: ${stn.last_update}</div></div>
-                                <div><span class="text-lg font-bold text-cyan-600">${stn.water_level.toFixed(2)}</span><span class="text-xs text-slate-500"> / ${stn.bank_level.toFixed(2)} ม.</span></div>
+                                <div><span class="text-lg font-bold ${isCrit?'text-red-600':'text-cyan-600'}">${val.toFixed(2)}</span><span class="text-xs text-slate-500"> / ${bank.toFixed(2)} ม.</span></div>
                             </div>
                             <div class="w-full bg-slate-200 rounded-full h-1.5"><div class="${isCrit?'bg-red-500':'bg-cyan-500'} h-1.5 rounded-full" style="width: ${pct}%"></div></div>
                         </div>`;
@@ -352,23 +412,50 @@
                     table.innerHTML += `<tr class="border-b">
                         <td class="p-3">${stn.station_name}</td>
                         <td class="p-3 text-cyan-500"><i class="fa-solid fa-water"></i> ระดับน้ำ</td>
-                        <td class="p-3 font-bold">${stn.water_level.toFixed(2)} <span class="text-xs font-normal">/ ${stn.bank_level.toFixed(2)} ม.</span></td>
+                        <td class="p-3 font-bold">${val.toFixed(2)} <span class="text-xs font-normal">/ ${bank.toFixed(2)} ม.</span></td>
                         <td class="p-3">${getBadge(isCrit, isWarn)}</td>
-                        <td class="p-3 text-xs text-slate-400">API</td>
+                        <td class="p-3 text-xs text-slate-400">ONWR</td>
                         <td class="p-3 text-xs text-slate-400">${stn.last_update}</td>
                     </tr>`;
                 });
             }
 
+            // 2. เรนเดอร์ข้อมูลสถานีที่กรอกด้วยมือ (Manual)
+            const latestLogs = {};
+            appState.manualLogs.sort((a,b) => b.timestamp - a.timestamp).forEach(log => {
+                if(!latestLogs[log.stationId]) latestLogs[log.stationId] = log;
+            });
+
+            appState.stations.forEach(stn => {
+                const log = latestLogs[stn.id];
+                const valStr = log ? parseFloat(log.value).toFixed(2) : '--';
+                const timeStr = log && log.timestamp ? new Date(log.timestamp.toDate()).toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'}) : 'ยังไม่มีข้อมูล';
+                
+                if (stn.type === 'rain') {
+                    let val = log ? parseFloat(log.value) : 0;
+                    let isCrit = val >= 90, isWarn = val >= 50 && !isCrit;
+                    if(isCrit) hasCritical = true; else if(isWarn) hasWarning = true;
+                    
+                    if(stn.lat && stn.lng) createMapMarker(stn.lat, stn.lng, stn.name, 'rain', valStr, isCrit, isWarn);
+
+                    rainC.innerHTML += `
+                        <div class="flex justify-between items-center p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+                            <div><div class="text-sm font-semibold">${stn.name} <span class="text-[9px] bg-indigo-200 px-1 rounded">MANUAL</span></div><div class="text-[10px] text-slate-500">เวลา: ${timeStr}</div></div>
+                            <div class="text-right"><span class="text-lg font-bold text-indigo-600">${valStr}</span> <span class="text-xs text-slate-500">มม.</span></div>
+                        </div>`;
+                }
+            });
+
+            // อัปเดตแบนเนอร์สถานะ
             const statusBg = document.getElementById('status-bg');
             if (hasCritical) {
                 statusBg.className = "rounded-2xl p-6 text-white text-center shadow-md bg-red-600";
                 document.getElementById('status-text').textContent = "วิกฤต";
-                document.getElementById('status-desc').textContent = "ระดับน้ำล้นตลิ่ง หรือ ฝนตกหนักมาก!";
+                document.getElementById('status-desc').textContent = "มีสถานีเกินค่าวิกฤต!";
             } else if (hasWarning) {
                 statusBg.className = "rounded-2xl p-6 text-white text-center shadow-md bg-orange-500";
                 document.getElementById('status-text').textContent = "เตือนภัย";
-                document.getElementById('status-desc').textContent = "เฝ้าระวังน้ำล้นตลิ่งจากปริมาณฝนสะสม";
+                document.getElementById('status-desc').textContent = "มีสถานีอยู่ในเกณฑ์เฝ้าระวัง";
             } else {
                 statusBg.className = "rounded-2xl p-6 text-white text-center shadow-md bg-emerald-500";
                 document.getElementById('status-text').textContent = "ปกติ";
@@ -376,18 +463,117 @@
             }
         }
 
-        // Login Logic
+        // ---------- ระบบจัดการ ADMIN & STAFF ----------
+        document.getElementById('new-station-type').addEventListener('change', (e) => {
+            document.getElementById('bank-level-container').style.display = e.target.value === 'water' ? 'block' : 'none';
+        });
+
+        window.handleCreateStation = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('new-station-name').value;
+            const type = document.getElementById('new-station-type').value;
+            const bank = document.getElementById('new-station-bank').value;
+            const lat = document.getElementById('new-station-lat').value;
+            const lng = document.getElementById('new-station-lng').value;
+
+            try {
+                await addDoc(collection(db, 'stations'), {
+                    name, type, 
+                    bankLevel: type === 'water' && bank ? parseFloat(bank) : null,
+                    lat: lat ? parseFloat(lat) : null,
+                    lng: lng ? parseFloat(lng) : null
+                });
+                document.getElementById('form-create-station').reset();
+                alert("สร้างสถานีสำเร็จ");
+            } catch (err) { alert("เกิดข้อผิดพลาด"); }
+        };
+
+        function renderAdminStationList() {
+            const list = document.getElementById('admin-station-list');
+            list.innerHTML = '';
+            appState.stations.forEach(s => {
+                list.innerHTML += `<div class="flex justify-between py-1 border-b border-slate-200 text-slate-600"><span>${s.name} <span class="text-[10px] text-slate-400">(${s.type})</span></span></div>`;
+            });
+        }
+
+        function updateStationCheckboxes() {
+            const container = document.getElementById('assign-stations-checkboxes');
+            container.innerHTML = '';
+            appState.stations.forEach(s => {
+                container.innerHTML += `<label class="flex items-center space-x-2 cursor-pointer p-1"><input type="checkbox" name="assign_stn" value="${s.id}" class="rounded text-emerald-500"><span class="text-slate-700">${s.name}</span></label>`;
+            });
+        }
+
+        window.handleCreateUser = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('new-user-name').value;
+            const pin = document.getElementById('new-user-pin').value;
+            const role = document.getElementById('new-user-role').value;
+            const checkboxes = document.querySelectorAll('input[name="assign_stn"]:checked');
+            const assigned = Array.from(checkboxes).map(cb => cb.value);
+
+            try {
+                await addDoc(collection(db, 'appUsers'), { name, pin, role, assignedStations: assigned });
+                document.getElementById('form-create-user').reset();
+                alert("บันทึกบัญชีผู้ใช้สำเร็จ");
+            } catch (err) { alert("เกิดข้อผิดพลาด"); }
+        };
+
+        function renderStaffView() {
+            const container = document.getElementById('staff-stations-list');
+            container.innerHTML = '';
+            if(!appState.currentUserProfile) return;
+            
+            const assignedIds = appState.currentUserProfile.assignedStations || [];
+            const myStations = appState.stations.filter(s => assignedIds.includes(s.id));
+
+            if(myStations.length === 0) {
+                container.innerHTML = '<div class="text-center p-6 text-slate-400">คุณยังไม่ได้รับมอบหมายสถานีใดๆ</div>';
+                return;
+            }
+
+            myStations.forEach(stn => {
+                const unit = stn.type === 'rain' ? 'มม.' : 'ม.รทก.';
+                container.innerHTML += `
+                    <div class="flex items-center justify-between p-4 border rounded-xl">
+                        <div><div class="font-bold text-slate-700">${stn.name}</div></div>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" step="0.01" id="input-val-${stn.id}" class="w-24 px-3 py-1.5 border rounded-lg text-center">
+                            <span class="text-xs text-slate-500 w-10">${unit}</span>
+                            <button onclick="submitManualData('${stn.id}', '${stn.type}')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg"><i class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        window.submitManualData = async (stationId, type) => {
+            const inputEl = document.getElementById(`input-val-${stationId}`);
+            if(!inputEl.value) return alert("กรุณาระบุค่า");
+            try {
+                await addDoc(collection(db, 'manual_logs'), {
+                    stationId: stationId, value: parseFloat(inputEl.value), timestamp: serverTimestamp(), recordedBy: appState.currentUserProfile.name
+                });
+                inputEl.value = '';
+                alert("บันทึกข้อมูลเรียบร้อย");
+            } catch (error) { alert("บันทึกไม่สำเร็จ"); }
+        };
+
+        // ---------- ระบบ LOGIN ----------
         window.showLoginModal = () => document.getElementById('loginModal').classList.remove('hidden');
         window.closeLoginModal = () => document.getElementById('loginModal').classList.add('hidden');
+        
         function updateLoginDropdown() {
             const select = document.getElementById('login-user-select');
             select.innerHTML = '<option value="">-- เลือกบัญชี --</option>';
             appState.users.forEach(u => select.innerHTML += `<option value="${u.id}">${u.name} (${u.role})</option>`);
         }
+
         window.handleLogin = (e) => {
             e.preventDefault();
-            const uId = document.getElementById('login-user-select').value, pin = document.getElementById('login-pin').value;
+            const uId = document.getElementById('login-user-select').value;
+            const pin = document.getElementById('login-pin').value;
             const user = appState.users.find(u => u.id === uId);
+            
             if(user && user.pin === pin) {
                 appState.currentUserProfile = user;
                 closeLoginModal();
@@ -395,11 +581,15 @@
                 document.getElementById('user-profile-menu').classList.remove('hidden');
                 document.getElementById('display-user-name').textContent = user.name;
                 document.getElementById('display-user-role').textContent = user.role.toUpperCase();
+                
                 document.getElementById('tab-staff').classList.remove('hidden');
                 if(user.role === 'admin') document.getElementById('tab-admin').classList.remove('hidden');
+                
                 document.getElementById('login-pin').value = '';
-            } else alert("รหัสผิดพลาด");
+                renderStaffView();
+            } else alert("รหัสผ่านไม่ถูกต้อง");
         };
+
         window.logout = () => {
             appState.currentUserProfile = null;
             document.getElementById('btn-login-trigger').classList.remove('hidden');
@@ -408,12 +598,13 @@
             document.getElementById('tab-admin').classList.add('hidden');
             switchTab('dashboard');
         };
+
         window.createInitialAdmin = async () => {
             const pin = document.getElementById('init-admin-pin').value;
             if(pin.length === 4) {
-                await addDoc(collection(db, 'appUsers'), { name: "ผู้ดูแลระบบสูงสุด", pin: pin, role: "admin", createdAt: serverTimestamp() });
+                await addDoc(collection(db, 'appUsers'), { name: "ผู้ดูแลระบบสูงสุด SUPER ADMIN", pin: pin, role: "admin", assignedStations: [] });
                 document.getElementById('initial-setup-notice').classList.add('hidden');
-            }
+            } else alert("กรุณาตั้ง PIN 4 หลัก");
         };
 
         initSystem();
