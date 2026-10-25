@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -20,11 +19,6 @@
     </style>
 </head>
 <body class="text-slate-800 flex flex-col min-h-screen">
-
-    <div id="toast" class="fixed top-4 right-4 z-50 bg-slate-800 text-white px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-y-[-150%] flex items-center">
-        <i id="toast-icon" class="fa-solid fa-info-circle mr-3 text-blue-400"></i>
-        <span id="toast-msg" class="text-sm font-medium">Message</span>
-    </div>
 
     <nav class="bg-blue-900 text-white shadow-lg z-10 sticky top-0">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
@@ -99,7 +93,6 @@
                     
                     <div class="bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-700 text-white">
                         <h3 class="font-bold mb-3"><i class="fa-solid fa-satellite-dish mr-2 text-green-400"></i>เรดาร์ตรวจอากาศ สุราษฎร์ธานี</h3>
-                        <!-- ปรับการซูมและแสดงผลเรดาร์สุราษฎร์ธานี -->
                         <div class="relative w-full rounded-xl overflow-hidden bg-slate-900 flex justify-center items-center h-64 md:h-80">
                             <iframe src="https://weather.tmd.go.th/srt.php" scrolling="no" frameborder="0" class="w-full h-[600px] -mt-[150px]" style="pointer-events: none;"></iframe>
                         </div>
@@ -129,11 +122,10 @@
         <!-- STAFF TAB -->
         <div id="view-staff" class="hidden max-w-3xl mx-auto bg-white rounded-2xl shadow-sm p-6 border border-slate-100">
             <h2 class="text-xl font-bold text-slate-800 mb-2"><i class="fa-solid fa-clipboard-list text-blue-500 mr-2"></i>บันทึกข้อมูลสถานีที่รับผิดชอบ</h2>
-            <p class="text-sm text-slate-500 mb-6">สำหรับสถานีที่ไม่มี API และต้องกรอกข้อมูลด้วยมือ</p>
             <div id="staff-stations-list" class="space-y-4"></div>
         </div>
 
-        <!-- ADMIN TAB (รหัสส่วนนี้ที่เคยถูกลบไป ผมเอากลับมาให้ครบแล้วครับ) -->
+        <!-- ADMIN TAB -->
         <div id="view-admin" class="hidden space-y-6">
             <div class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-md">
                 <h2 class="text-xl font-bold mb-1"><i class="fa-solid fa-shield-halved mr-2"></i>แผงควบคุมผู้ดูแลระบบ</h2>
@@ -229,7 +221,6 @@
                 </div>
             </form>
             
-            <!-- กรณีฐานข้อมูลว่างเปล่า (สร้างแอดมินคนแรก) -->
             <div id="initial-setup-notice" class="hidden absolute inset-0 bg-white z-10 flex flex-col items-center justify-center p-6 text-center">
                 <h3 class="font-bold text-lg mb-2">เริ่มต้นใช้งานครั้งแรก</h3>
                 <p class="text-xs text-slate-500 mb-4">ยังไม่มีระบบผู้ดูแล กรุณาสร้าง PIN สำหรับแอดมินคนแรก</p>
@@ -239,14 +230,15 @@
         </div>
     </div>
 
-    <!-- SCRIPT LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // URL GAS ของคุณ
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyIGhGzd0BZPFQQNT3AprS40GLD3OZhC8pTyrvXtmPJxa_fl8zQy-nUwIgCyey1cs-D/exec"; 
         
+        // ข้อมูล Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBg7v1zCjlUGuAT4zKJImH9NGFxasLrHRY",
             authDomain: "bannasan-flood.firebaseapp.com",
@@ -270,9 +262,8 @@
             try {
                 await signInAnonymously(auth);
                 fetchAPIData();
-                setInterval(fetchAPIData, 900000); // 15 นาที
+                setInterval(fetchAPIData, 900000); 
                 
-                // ดึงข้อมูล Users
                 onSnapshot(collection(db, 'appUsers'), (snapshot) => {
                     appState.users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     updateLoginDropdown();
@@ -283,7 +274,6 @@
                     }
                 });
 
-                // ดึงข้อมูลสถานี Manual
                 onSnapshot(collection(db, 'stations'), (snapshot) => {
                     appState.stations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     renderAdminStationList();
@@ -291,13 +281,12 @@
                     if(appState.currentUserProfile) renderStaffView();
                 });
 
-                // ดึงข้อมูลการกรอก Manual ล่าสุด
                 onSnapshot(collection(db, 'manual_logs'), (snapshot) => {
                     appState.manualLogs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     renderDashboard();
                 });
 
-            } catch (err) { console.error(err); }
+            } catch (err) { console.error("Firebase Init Error:", err); }
         }
 
         window.switchTab = (tabName) => {
@@ -332,7 +321,7 @@
 
         function initMap() {
             if (map) return;
-            map = L.map('map-container').setView([8.800, 99.366], 10); // ซูมที่ อ.บ้านนาสาร
+            map = L.map('map-container').setView([8.800, 99.366], 10);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
             markersLayer = L.layerGroup().addTo(map);
         }
@@ -366,7 +355,6 @@
                                               (warn ? '<span class="bg-orange-100 text-orange-700 px-2 py-1 rounded text-[10px] font-bold">เฝ้าระวัง</span>' : 
                                                       '<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold">ปกติ</span>');
 
-            // 1. เรนเดอร์ข้อมูล API จาก ONWR
             if (appState.apiData) {
                 (appState.apiData.rainData || []).forEach(stn => {
                     let val = parseFloat(stn.rain_24h) || 0;
@@ -420,7 +408,6 @@
                 });
             }
 
-            // 2. เรนเดอร์ข้อมูลสถานีที่กรอกด้วยมือ (Manual)
             const latestLogs = {};
             appState.manualLogs.sort((a,b) => b.timestamp - a.timestamp).forEach(log => {
                 if(!latestLogs[log.stationId]) latestLogs[log.stationId] = log;
@@ -446,7 +433,6 @@
                 }
             });
 
-            // อัปเดตแบนเนอร์สถานะ
             const statusBg = document.getElementById('status-bg');
             if (hasCritical) {
                 statusBg.className = "rounded-2xl p-6 text-white text-center shadow-md bg-red-600";
@@ -484,8 +470,10 @@
                     lng: lng ? parseFloat(lng) : null
                 });
                 document.getElementById('form-create-station').reset();
-                alert("สร้างสถานีสำเร็จ");
-            } catch (err) { alert("เกิดข้อผิดพลาด"); }
+                alert("สร้างสถานีสำเร็จเรียบร้อยครับ");
+            } catch (err) { 
+                alert("เกิดข้อผิดพลาดในการสร้างสถานี: " + err.message + "\n(กรุณาตรวจสอบกฎ Rules ใน Firebase)"); 
+            }
         };
 
         function renderAdminStationList() {
@@ -515,8 +503,10 @@
             try {
                 await addDoc(collection(db, 'appUsers'), { name, pin, role, assignedStations: assigned });
                 document.getElementById('form-create-user').reset();
-                alert("บันทึกบัญชีผู้ใช้สำเร็จ");
-            } catch (err) { alert("เกิดข้อผิดพลาด"); }
+                alert("บันทึกบัญชีผู้ใช้สำเร็จเรียบร้อยครับ");
+            } catch (err) { 
+                alert("เกิดข้อผิดพลาดในการสร้าง User: " + err.message + "\n(กรุณาตรวจสอบกฎ Rules ใน Firebase)"); 
+            }
         };
 
         function renderStaffView() {
@@ -555,7 +545,9 @@
                 });
                 inputEl.value = '';
                 alert("บันทึกข้อมูลเรียบร้อย");
-            } catch (error) { alert("บันทึกไม่สำเร็จ"); }
+            } catch (error) { 
+                alert("บันทึกไม่สำเร็จ: " + error.message); 
+            }
         };
 
         // ---------- ระบบ LOGIN ----------
@@ -602,8 +594,13 @@
         window.createInitialAdmin = async () => {
             const pin = document.getElementById('init-admin-pin').value;
             if(pin.length === 4) {
-                await addDoc(collection(db, 'appUsers'), { name: "ผู้ดูแลระบบสูงสุด SUPER ADMIN", pin: pin, role: "admin", assignedStations: [] });
-                document.getElementById('initial-setup-notice').classList.add('hidden');
+                try {
+                    await addDoc(collection(db, 'appUsers'), { name: "ผู้ดูแลระบบสูงสุด SUPER ADMIN", pin: pin, role: "admin", assignedStations: [] });
+                    document.getElementById('initial-setup-notice').classList.add('hidden');
+                    alert("สร้างแอดมินสำเร็จ กรุณาเลือกล็อกอินในหน้าต่างเดิมครับ");
+                } catch(err) {
+                    alert("ไม่สามารถสร้างแอดมินได้ กรุณาไปปลดล็อคกฎ Rule ใน Firebase ให้เป็น true ก่อนครับ");
+                }
             } else alert("กรุณาตั้ง PIN 4 หลัก");
         };
 
